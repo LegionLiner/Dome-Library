@@ -17,16 +17,6 @@ try {
     document.head.append(styles2);
 }
 }
-
-const errors = [
-  "Ошибка! Неправильно задан селектор CSS.",
-  "Ошибка! Неверно задан EventListener или действие.",
-  "Ошибка! Элемент не может содержать текстовый узел.",
-  "Ошибка! Такого класса не существует",
-  "Ошибка! Такого идентификатора не существует.",
-  "Ошибка! Такого элемента не существует или неправильно задан селектор CSS.",
-  "Ошибка! Не удалось извлечь букву."
-];
 const month = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
 const week = ["Воскресенье", "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"]
 // param = ["mount", "component"]
@@ -114,5 +104,68 @@ const Dome = function(data = "", param = "mount", template = `<button>Click</but
         this.el.innerHTML = ""
       }
     }
+
+    let signals = {} // Изначально сигналы - это просто пустой объект
+    observeData(data)
+    function observe (property, signalHandler) {
+      if(!signals[property]) signals[property] = []
+      // Если для данного свойства нет сигнала,
+      // мы создаем его и помещаем туда массив
+      // для хранения обработчиков
+
+      signals[property].push(signalHandler)
+      // Помещаем обработчик signalHandler
+      // в массив сигналов, который фактически
+      // является массивом функций обратного вызова
+    }
+    function notify (signal) {
+      if(!signals[signal] || signals[signal].length < 1) return
+      // Выходим из функции, если нет
+      // соответствующих обработчиков сигнала
+
+      signals[signal].forEach((signalHandler) => signalHandler())
+      // Мы вызываем все обработчики, которые
+      // следят за данным свойством
+    }
+    function makeReactive (obj, key) {
+      let val = obj[key]
+
+      Object.defineProperty(obj, key, {
+        get () {
+          return val // геттер возвращает значение
+        },
+        set (newVal) {
+          val = newVal // сеттер обновляет значение
+          notify(key)
+        }
+      })
+    }
+    function observeData (obj) {
+      for (let key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          makeReactive(obj, key)
+        }
+      }
+      parseDOM(document.body, obj)
+    }
+    function syncNode (node, observable, property) {
+      node.textContent = observable[property]
+      observe(property, () => node.textContent = observable[property])
+    }
+    function parseDOM (node, observable) {
+      const nodes = document.querySelectorAll('[d-text]')
+      // Находим все DOM-узлы, у которых
+      // есть атрибут s-text
+
+      nodes.forEach((node) => {
+        syncNode(node, observable, node.attributes['d-text'].value)
+      })
+        // Для каждого узла вызываем функцию syncNode
+    }
+};
+
+function updateText (property, e) {
+	dom.data[property] = e.target.value
 }
+// обязательно указывать каждый раз при создании обьекта, вместо dom - имя вашего приложения
 // Конец самой библиотеки
