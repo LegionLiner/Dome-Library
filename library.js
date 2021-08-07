@@ -162,10 +162,10 @@ const Dome = function(data = "", param = "mount", template = `<button>Click</but
       })
         // Для каждого узла вызываем функцию syncNode
     }
+
+   this.updateText = function (property, e) {
+   	this.data[property] = e.target.value
+   }
 };
 
-function updateText (property, e) {
-	dom.data[property] = e.target.value
-}
-// обязательно указывать каждый раз при создании обьекта, вместо dom - имя вашего приложения
 // Конец самой библиотеки
