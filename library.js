@@ -29,101 +29,108 @@ const errors = [
 ];
 const month = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
 const week = ["Воскресенье", "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"]
+// param = ["mount", "component"]
 
 
-const Dome = function() {
-  this._el = "";
-  this.$ = {
-    find: function(el) {
-        let node = document.querySelector(el)
-      //  console.log(`${node} - в файнд`);
-        this._el = node;
-      },
-    hide: function() {
-        this._el.style.display = "none"
-      },
-    show: function(el) {
+const Dome = function(data = "", param = "mount", template = `<button>Click</button>`) {
+   this.data = data;
+   this.$ = this.data.methods
+   this.find = function(el) {
+      let node = document.querySelector(el)
+      this.el = node;
+      return this
+   }
+   this.hide = function() {
+      this._el.style.display = "none"
+   }
+   this.show = function(el) {
       this._el.style.display = "block"
-      },
-    toggle: function() {
-        this._el.style.display == "none" ? this._el.style.display = "block" : this._el.style.display = "none"
-      },
-    class: function(className) {
-          if (this._el) {
-            this._el.classList.add(className)
-          } else {
-            console.warn(errors[5]);
-          }
-      },
-    removeClass: function(className) {
-        if (this._el) {
-          this._el.classList.remove(className)
-        } else {
-          console.warn(errors[5]);
-        }
-      },
-    text: function(text) {
-        this._el.textContent = text;
-      },
-    append: function(text) {
-        this._el.textContent = `${this._el.textContent} ${text}`
-      },
-    act: function(fun, event) {
-        this._el.addEventListener(event, fun)
-      },
-    css: function (text) {
-        this._el.style.cssText = text
-      },
-    year: function() {
+   }
+   this.toggle = function() {
+      this.el.style.display == "none" ? this.el.style.display = "block" : this.el.style.display = "none"
+   }
+   this.class = function(className) {
+      this.el.classList.add(className)
+   }
+   this.removeClass = function(className) {
+      this.el.classList.remove(className)
+   }
+   this.text = function(text) {
+      this.el.textContent = text;
+   }
+   this.append = function(text) {
+      this.el.textContent = `${this.el.textContent} ${text}`
+   }
+   this.act = function(fun, event) {
+      this.el.addEventListener(event, fun)
+   }
+   this.css = function (text) {
+      this._el.style.cssText = text
+   }
+   this.year = function() {
       let now = new Date();
       return now.getFullYear()
-    },
-    month: function() {
+   }
+   this.month = function() {
       let now = new Date().getMonth();
       return month[now]
-    },
-    day: function() {
+   }
+   this.day = function() {
       let now = new Date();
       let date = now.getDate();
       return `Сегодня ${date} число, ${week[now.getDay()]}`
-    },
-    time: function () {
+   }
+   this.time = function () {
       let now = new Date();
       return `${now.getHours()}:${now.getMinutes()}`
-    },
-    invisibility: function() {
+   }
+   this.invisibility = function() {
       this.removeClass("showInLibrary")
       this.class("hideInLibrary")
       setTimeout(() => {
         this._el.style.display = "none"
       }, 701);
-    },
-    visibility: function () {
+   }
+   this.visibility = function () {
       this.removeClass("hideInLibrary")
       this.class("showInLibrary")
       this.show()
+   }
+   this.addChild = function (el, text) {
+      if (this.el.firstChild) {
+        let timeEl = document.createElement(el);
+        timeEl.innerHTML = text;
+        this.el.append(timeEl);
+        timeEl = null;
+      }
+   }
+
+   if (param = "component") {
+      this.template = template;
+      this.draw = () => {
+          this.el.innerHTML = this.template
+      }
+      this.erase = () => {
+        this.el.innerHTML = ""
+      }
     }
-  };
 }
 // Конец самой библиотеки
 
-/*
-const dom = new Dome() // создание Dome приложения
-dom.$.find(".lol") // монтирование приложения к элементу
-dom.$.hide()
-//dom.$.show()
-dom.$.toggle()
-dom.$.class("classWithDome")
-dom.$.removeClass("classWithDome")
-dom.$.text("TEXTTEXTTEXT")
-dom.$.append(" APPEND TEXT")
-dom.$.act(() => {
-  console.log("RABOTAET");
-}, "click")
-dom.$.css("padding-left: 25px")
-console.log(dom.$.year(), dom.$.month(), dom.$.day(), dom.$.time());
-dom.$.invisibility()
-setTimeout(function () {
-  dom.$.visibility()
-}, 1500);
-*/
+
+const dom = new Dome({
+  classOne: "testClass",
+  classTwo: "secondClass",
+  methods: {
+    onclickAlert() {
+      alert("Нажал");
+      setTimeout(function () {
+        dom.erase()
+      }, 1000);
+    }
+  }
+}, "component", template = `
+  <p onclick="dom.$.onclickAlert()">ТЕКСТ!</p>
+`).find(".lol")
+
+dom.draw()
