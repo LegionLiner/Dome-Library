@@ -116,21 +116,3 @@ const Dome = function(data = "", param = "mount", template = `<button>Click</but
     }
 }
 // Конец самой библиотеки
-
-
-const dom = new Dome({
-  classOne: "testClass",
-  classTwo: "secondClass",
-  methods: {
-    onclickAlert() {
-      alert("Нажал");
-      setTimeout(function () {
-        dom.erase()
-      }, 1000);
-    }
-  }
-}, "component", template = `
-  <p onclick="dom.$.onclickAlert()">ТЕКСТ!</p>
-`).find(".lol")
-
-dom.draw()
