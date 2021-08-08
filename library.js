@@ -19,7 +19,6 @@ try {
 }
 const month = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
 const week = ["Воскресенье", "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"]
-// param = ["mount", "component"]
 
 
 const Dome = function(data = "", param = "mount", template = `<button>Click</button>`) {
@@ -31,10 +30,10 @@ const Dome = function(data = "", param = "mount", template = `<button>Click</but
       return this
    }
    this.hide = function() {
-      this._el.style.display = "none"
+      this.el.style.display = "none"
    }
    this.show = function(el) {
-      this._el.style.display = "block"
+      this.el.style.display = "block"
    }
    this.toggle = function() {
       this.el.style.display == "none" ? this.el.style.display = "block" : this.el.style.display = "none"
@@ -96,16 +95,26 @@ const Dome = function(data = "", param = "mount", template = `<button>Click</but
    }
 
    if (param = "component") {
-      this.template = template;
+      this.temp = template;
       this.draw = () => {
-          this.el.innerHTML = this.template
+          this.el.innerHTML = this.temp
       }
       this.erase = () => {
         this.el.innerHTML = ""
       }
+      Object.defineProperty(this, 'template', {
+        get() {
+          return this.temp;
+        },
+
+        set(value) {
+          this.temp = value;
+          this.draw()
+        }
+      })
     }
 
-    let signals = {} // Изначально сигналы - это просто пустой объект
+    let signals = {}
     observeData(data)
     function observe (property, signalHandler) {
       if(!signals[property]) signals[property] = []
@@ -166,6 +175,36 @@ const Dome = function(data = "", param = "mount", template = `<button>Click</but
    this.updateText = function (property, e) {
    	this.data[property] = e.target.value
    }
+   this.tp = function (data) {
+     let x = data.toX;
+     let y = data.toY;
+     this.el.style.position = "absolute";
+     this.el.style.top = x + "px";
+     this.el.style.left = y + "px";
+   }
 };
 
 // Конец самой библиотеки
+
+const dom = new Dome({
+  title: "lol",
+  methods: {
+    alertclick() {
+      console.log("LOL");
+    },
+    lol() {
+      console.log("KEK");
+    }
+  }
+}, "component", template = `
+    <p onclick="dom.$.alertclick()">lol</p>
+`).find(".lol")
+
+dom.draw()
+
+console.log(dom.template);
+setTimeout(function () {
+  dom.template = `<p onclick="dom.$.lol()">kek</p>`
+  console.log(dom.template);
+}, 1000);
+
