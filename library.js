@@ -95,9 +95,16 @@ const Dome = function(data = "", param = "mount", template = `<button>Click</but
    }
 
    if (param = "component") {
+      this.nodes = []
       this.temp = template;
-      this.draw = () => {
-          this.el.innerHTML = this.temp
+      this.draw = (el) => {
+        let node = document.querySelector(el)
+          node.innerHTML = this.temp
+          this.nodes.push(el)
+      }
+      this._anonimDraw = (el) => {
+        let node = document.querySelector(el)
+          node.innerHTML = this.temp
       }
       this.erase = () => {
         this.el.innerHTML = ""
@@ -109,7 +116,9 @@ const Dome = function(data = "", param = "mount", template = `<button>Click</but
 
         set(value) {
           this.temp = value;
-          this.draw()
+          for (var el of this.nodes) {
+            this._anonimDraw(el)
+          }
         }
       })
     }
@@ -185,26 +194,3 @@ const Dome = function(data = "", param = "mount", template = `<button>Click</but
 };
 
 // Конец самой библиотеки
-
-const dom = new Dome({
-  title: "lol",
-  methods: {
-    alertclick() {
-      console.log("LOL");
-    },
-    lol() {
-      console.log("KEK");
-    }
-  }
-}, "component", template = `
-    <p onclick="dom.$.alertclick()">lol</p>
-`).find(".lol")
-
-dom.draw()
-
-console.log(dom.template);
-setTimeout(function () {
-  dom.template = `<p onclick="dom.$.lol()">kek</p>`
-  console.log(dom.template);
-}, 1000);
-
