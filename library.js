@@ -21,11 +21,11 @@ const month = ["Январь", "Февраль", "Март", "Апрель", "М
 const week = ["Воскресенье", "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"]
 
 
-const Dome = function(data = "", param = "mount", template = `<button>Click</button>`) {
+const Dome = function(els = ".lol", data = "", template = ``) {
    this.data = data;
    this.$ = this.data.methods
-   this.find = function(el) {
-      let node = document.querySelector(el)
+   this.find = function() {
+      let node = document.querySelector(els)
       this.el = node;
       return this
    }
@@ -54,7 +54,7 @@ const Dome = function(data = "", param = "mount", template = `<button>Click</but
       this.el.addEventListener(event, fun)
    }
    this.css = function (text) {
-      this._el.style.cssText = text
+      this.el.style.cssText = text
    }
    this.year = function() {
       let now = new Date();
@@ -77,7 +77,7 @@ const Dome = function(data = "", param = "mount", template = `<button>Click</but
       this.removeClass("showInLibrary")
       this.class("hideInLibrary")
       setTimeout(() => {
-        this._el.style.display = "none"
+        this.el.style.display = "none"
       }, 701);
    }
    this.visibility = function () {
@@ -94,17 +94,19 @@ const Dome = function(data = "", param = "mount", template = `<button>Click</but
       }
    }
 
-   if (param = "component") {
-      this.nodes = []
+   if (template != undefined) {
+      this.nodes = [els]
       this.temp = template;
       this.draw = (el) => {
         let node = document.querySelector(el)
           node.innerHTML = this.temp
           this.nodes.push(el)
+          observeData(data, this.nodes)
       }
       this._anonimDraw = (el) => {
         let node = document.querySelector(el)
           node.innerHTML = this.temp
+          observeData(data, this.nodes)
       }
       this.erase = () => {
         this.el.innerHTML = ""
@@ -116,15 +118,17 @@ const Dome = function(data = "", param = "mount", template = `<button>Click</but
 
         set(value) {
           this.temp = value;
-          for (var el of this.nodes) {
+          for (let el of this.nodes) {
             this._anonimDraw(el)
           }
         }
-      })
-    }
+      })}
 
     let signals = {}
-    observeData(data)
+    observeData(this.data, this.nodes)
+    function isBoolean(n) {
+      return typeof n === 'boolean';
+    }
     function observe (property, signalHandler) {
       if(!signals[property]) signals[property] = []
       // Если для данного свойства нет сигнала,
@@ -145,40 +149,67 @@ const Dome = function(data = "", param = "mount", template = `<button>Click</but
       // Мы вызываем все обработчики, которые
       // следят за данным свойством
     }
-    function makeReactive (obj, key) {
+    function makeReactive (obj, key, nodes) {
       let val = obj[key]
-
       Object.defineProperty(obj, key, {
         get () {
-          return val // геттер возвращает значение
+          return val
         },
         set (newVal) {
-          val = newVal // сеттер обновляет значение
+          val = newVal
           notify(key)
+          if (isBoolean(val)) {
+            for (let el of nodes) {
+              parseDOM(el, obj)
+            }
+          }
         }
       })
     }
-    function observeData (obj) {
+    function observeData (obj, nodes) {
       for (let key in obj) {
         if (obj.hasOwnProperty(key)) {
-          makeReactive(obj, key)
+          makeReactive(obj, key, nodes)
         }
       }
-      parseDOM(document.body, obj)
+      for (let el of nodes) {
+        parseDOM(el, obj)
+      }
     }
     function syncNode (node, observable, property) {
       node.textContent = observable[property]
       observe(property, () => node.textContent = observable[property])
     }
+    function ifNode(ifEl, data, proprety) {
+      if (!data[proprety]) {
+        ifEl.style.display = "none";
+        if (ifEl.nextElementSibling.hasAttribute("d-else")) {
+          if (ifEl.nextElementSibling.nextSibling.nodeName == "#text") {
+            ifEl.nextElementSibling.style.display = "inline";
+          } else {
+            ifEl.nextElementSibling.style.display = "block";
+          }
+        }
+      } else {
+        if (ifEl.nextSibling.nodeName == "#text") {
+          ifEl.style.display = "inline"
+        } else {
+          ifEl.style.display = "block"
+        }
+        if (ifEl.nextElementSibling.hasAttribute("d-else")) {
+          ifEl.nextElementSibling.style.display = "none";
+        }
+      }
+    }
     function parseDOM (node, observable) {
-      const nodes = document.querySelectorAll('[d-text]')
-      // Находим все DOM-узлы, у которых
-      // есть атрибут s-text
-
+      let nodes = document.querySelectorAll(`${node} > [d-text]`)
+      let ifs = document.querySelectorAll(`${node} > [d-if]`)
+      ifs.forEach((item) => {
+        ifNode(item, observable, item.attributes['d-if'].value)
+      });
       nodes.forEach((node) => {
         syncNode(node, observable, node.attributes['d-text'].value)
       })
-        // Для каждого узла вызываем функцию syncNode
     }
 
    this.updateText = function (property, e) {
