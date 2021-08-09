@@ -24,7 +24,7 @@ const week = ["Воскресенье", "Понедельник", "Вторни�
 const Dome = function(els = ".lol", data = "", template = ``) {
    this.data = data;
    this.$ = this.data.methods
-   this.find = function() {
+   this.find = function(els) {
       let node = document.querySelector(els)
       this.el = node;
       return this
@@ -201,15 +201,121 @@ const Dome = function(els = ".lol", data = "", template = ``) {
         }
       }
     }
+    function syncClicks(clickEL, data, proprety) {
+      clickEL.addEventListener("click", data.methods[proprety])
+    }
+    function syncDblclick(clickEL, data, proprety) {
+      clickEL.addEventListener("dblclick", data.methods[proprety])
+    }
+    function syncMousedown(clickEL, data, proprety) {
+      clickEL.addEventListener("mousedown", data.methods[proprety])
+    }
+    function syncMouseup(clickEL, data, proprety) {
+      clickEL.addEventListener("mouseup", data.methods[proprety])
+    }
+    function syncSelect(clickEL, data, proprety) {
+      clickEL.addEventListener("select", data.methods[proprety])
+    }
+    function syncMouseenter(clickEL, data, proprety) {
+      clickEL.addEventListener("mouseenter", data.methods[proprety])
+    }
+    function syncmMuseleave(clickEL, data, proprety) {
+      clickEL.addEventListener("mouseleave", data.methods[proprety])
+    }
+    function syncMousemove(clickEL, data, proprety) {
+      clickEL.addEventListener("mousemove", data.methods[proprety])
+    }
+    function syncMouseover(clickEL, data, proprety) {
+      clickEL.addEventListener("mouseover", data.methods[proprety])
+    }
+    function syncDrag(clickEL, data, proprety) {
+      clickEL.addEventListener("drag", data.methods[proprety])
+    }
+    function syncDrop(clickEL, data, proprety) {
+      clickEL.addEventListener("drop", data.methods[proprety])
+    }
+    function syncTouchcancel(clickEL, data, proprety) {
+      clickEL.addEventListener("touchcancel", data.methods[proprety])
+    }
+    function syncTouchstart(clickEL, data, proprety) {
+      clickEL.addEventListener("touchstart", data.methods[proprety])
+    }
+    function syncTouchend(clickEL, data, proprety) {
+      clickEL.addEventListener("touchend", data.methods[proprety])
+    }
+    function syncTouchmove(clickEL, data, proprety) {
+      clickEL.addEventListener("touchmove", data.methods[proprety])
+    }
     function parseDOM (node, observable) {
       let nodes = document.querySelectorAll(`${node} > [d-text]`)
       let ifs = document.querySelectorAll(`${node} > [d-if]`)
+      let clicks = document.querySelectorAll(`${node} > [d-click]`)
+      let dblclick = document.querySelectorAll(`${node} > [d-dblclick]`)
+      let mousedown = document.querySelectorAll(`${node} > [d-mousedown]`)
+      let mouseup = document.querySelectorAll(`${node} > [d-mouseup]`)
+      let select = document.querySelectorAll(`${node} > [d-select]`)
+      let mouseenter = document.querySelectorAll(`${node} > [d-mouseenter]`)
+      let mouseleave = document.querySelectorAll(`${node} > [d-mouseleave]`)
+      let mousemove = document.querySelectorAll(`${node} > [d-mousemove]`)
+      let mouseover = document.querySelectorAll(`${node} > [d-mouseover]`)
+      let drag = document.querySelectorAll(`${node} > [d-drag]`)
+      let drop = document.querySelectorAll(`${node} > [d-drop]`)
+      let touchstart = document.querySelectorAll(`${node} > [d-touchstart]`)
+      let touchcancel = document.querySelectorAll(`${node} > [d-touchcancel]`)
+      let touchend = document.querySelectorAll(`${node} > [d-touchend]`)
+      let touchmove = document.querySelectorAll(`${node} > [d-touchmove]`)
+
       ifs.forEach((item) => {
         ifNode(item, observable, item.attributes['d-if'].value)
       });
       nodes.forEach((node) => {
         syncNode(node, observable, node.attributes['d-text'].value)
-      })
+      });
+      clicks.forEach((click) => {
+        syncClicks(click, observable, click.attributes['d-click'].value)
+      });
+      dblclick.forEach((click) => {
+        syncDblclick(click, observable, click.attributes['d-dblclick'].value)
+      });
+      mousedown.forEach((click) => {
+        syncMousedown(click, observable, click.attributes['d-mousedown'].value)
+      });
+      mouseup.forEach((click) => {
+        syncMouseup(click, observable, click.attributes['d-mouseup'].value)
+      });
+      select.forEach((click) => {
+        syncSelect(click, observable, click.attributes['d-select'].value)
+      });
+      mouseenter.forEach((click) => {
+        syncMouseenter(click, observable, click.attributes['d-mouseenter'].value)
+      });
+      mouseleave.forEach((click) => {
+        syncmMuseleave(click, observable, click.attributes['d-mouseleave'].value)
+      });
+      mousemove.forEach((click) => {
+        syncMousemove(click, observable, click.attributes['d-mousemove'].value)
+      });
+      mouseover.forEach((click) => {
+        syncMouseover(click, observable, click.attributes['d-mouseover'].value)
+      });
+      drag.forEach((click) => {
+        syncDrag(click, observable, click.attributes['d-drag'].value)
+      });
+      drop.forEach((click) => {
+        syncDrop(click, observable, click.attributes['d-drop'].value)
+      });
+      touchcancel.forEach((click) => {
+        syncTouchcancel(click, observable, click.attributes['d-touchcancel'].value)
+      });
+      touchstart.forEach((click) => {
+        syncTouchstart(click, observable, click.attributes['d-touchstart'].value)
+      });
+      touchend.forEach((click) => {
+        syncTouchend(click, observable, click.attributes['d-touchend'].value)
+      });
+      touchmove.forEach((click) => {
+        syncTouchmove(click, observable, click.attributes['d-touchmove'].value)
+      });
     }
 
    this.updateText = function (property, e) {
