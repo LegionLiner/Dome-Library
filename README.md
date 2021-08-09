@@ -73,7 +73,10 @@ const dom = new Dome(".lol", {
   toY: 100
  }) //- перемещение элемента на заданные координаты
 ```
-
+### События d-event:
+      d-click, d-dblclick, d-mousedown, d-mouseup, d-select, 
+      d-mouseenter, d-mouseleave, d-mousemove, d-mouseover, 
+      d-drag, d-drop, d-touchstart, d-touchcancel, d-touchend, d-touchmove.
 ## Создание компонента
 Компонент создается путем добавления в аргумент разметки template.
 
