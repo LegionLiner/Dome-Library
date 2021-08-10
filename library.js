@@ -404,33 +404,3 @@ const Dome = function(els = "", data = "", template = ``) {
 
 // Конец самой библиотеки
 
-const dom = new Dome(".lol", {
-  title: "Hello, world!",
-  head: "Text Node",
-  show: true,
-  classAdd: true,
-  methods: {
-    onclicking() {
-      alert("I am a " + dom.title)
-  },
-    reverseClassAdd() {
-    dom.classAdd = !dom.classAdd
-  },
-  revText() {
-    dom.head = dom.head.split("").reverse().join("");
-  }
-  }
-})
-
-const dem = new Dome(".kek", {
-  classAdd: true,
-  textContent: "Text Content",
-  methods: {
-    reverse() {
-      dem.classAdd = !dem.classAdd
-    },
-    revText() {
-      dem.textContent = dem.textContent.split("").reverse().join("");
-    }
-  }
-})
