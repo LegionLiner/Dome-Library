@@ -21,8 +21,38 @@ const month = ["Январь", "Февраль", "Март", "Апрель", "М
 const week = ["Воскресенье", "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"]
 
 
-const Dome = function(els = ".lol", data = "", template = ``) {
+const Dome = function(els = "", data = "", template = ``) {
    this.data = data;
+   for (let item in this.data) {
+
+     if (item == "methods") {
+       for (let items in this.data.methods) {
+        this[items] = this.data.methods[items];
+      Object.defineProperty(this, items, {
+        get() {
+          return this.data.methods[items]
+        },
+
+        set(value) {
+          this.data.methods[items] = value;
+        }
+      })
+      }
+    } else {
+        this[item] = this.data[item];
+          //    setTimeout(() => {
+        Object.defineProperty(this, item, {
+          get() {
+            return this.data[item]
+          },
+
+          set(value) {
+            this.data[item] = value;
+          }
+        })
+  //     }, 0);
+    }
+   }
    this.find = (els) => {
       let node = document.querySelector(els)
       this.el = node;
@@ -179,6 +209,10 @@ const Dome = function(els = ".lol", data = "", template = ``) {
       node.textContent = observable[property]
       observe(property, () => node.textContent = observable[property])
     }
+    function syncOnce(node, observable, property) {
+      node.textContent = observable[property]
+      node.removeAttribute("d-once")
+    }
     function ifNode(ifEl, data, proprety) {
       if (!data[proprety]) {
         ifEl.style.display = "none";
@@ -249,27 +283,47 @@ const Dome = function(els = ".lol", data = "", template = ``) {
       node.value = observable[property]
       observe(property, () => node.value = observable[property])
     }
+    function syncClass(node, observable, property) {
+      let classJSON = JSON.parse(property)
+
+      for (let item in classJSON) {
+        if (observable[item]) {
+          node.classList.add(classJSON[item])
+          observe(item, () => node.value = observable[item])
+        } else {
+          node.classList.remove(classJSON[item])
+          if (!node.classList.length) {
+            node.removeAttribute("class")
+          }
+        }
+      }
+    }
     function parseDOM (node, observable) {
-      let nodes = document.querySelectorAll(`${node} > [d-text]`)
-      let ifs = document.querySelectorAll(`${node} > [d-if]`)
-      let clicks = document.querySelectorAll(`${node} > [d-click]`)
-      let dblclick = document.querySelectorAll(`${node} > [d-dblclick]`)
-      let mousedown = document.querySelectorAll(`${node} > [d-mousedown]`)
-      let mouseup = document.querySelectorAll(`${node} > [d-mouseup]`)
-      let select = document.querySelectorAll(`${node} > [d-select]`)
-      let mouseenter = document.querySelectorAll(`${node} > [d-mouseenter]`)
-      let mouseleave = document.querySelectorAll(`${node} > [d-mouseleave]`)
-      let mousemove = document.querySelectorAll(`${node} > [d-mousemove]`)
-      let mouseover = document.querySelectorAll(`${node} > [d-mouseover]`)
-      let drag = document.querySelectorAll(`${node} > [d-drag]`)
-      let drop = document.querySelectorAll(`${node} > [d-drop]`)
-      let touchstart = document.querySelectorAll(`${node} > [d-touchstart]`)
-      let touchcancel = document.querySelectorAll(`${node} > [d-touchcancel]`)
-      let touchend = document.querySelectorAll(`${node} > [d-touchend]`)
-      let touchmove = document.querySelectorAll(`${node} > [d-touchmove]`)
+      let once = document.querySelectorAll(`${node} > [d-once]`);
+      let nodes = document.querySelectorAll(`${node} > [d-text]`);
+      let classes = document.querySelectorAll(`${node} > [d-class]`);
+      let ifs = document.querySelectorAll(`${node} > [d-if]`);
+      let clicks = document.querySelectorAll(`${node} > [d-click]`);
+      let dblclick = document.querySelectorAll(`${node} > [d-dblclick]`);
+      let mousedown = document.querySelectorAll(`${node} > [d-mousedown]`);
+      let mouseup = document.querySelectorAll(`${node} > [d-mouseup]`);
+      let select = document.querySelectorAll(`${node} > [d-select]`);
+      let mouseenter = document.querySelectorAll(`${node} > [d-mouseenter]`);
+      let mouseleave = document.querySelectorAll(`${node} > [d-mouseleave]`);
+      let mousemove = document.querySelectorAll(`${node} > [d-mousemove]`);
+      let mouseover = document.querySelectorAll(`${node} > [d-mouseover]`);
+      let drag = document.querySelectorAll(`${node} > [d-drag]`);
+      let drop = document.querySelectorAll(`${node} > [d-drop]`);
+      let touchstart = document.querySelectorAll(`${node} > [d-touchstart]`);
+      let touchcancel = document.querySelectorAll(`${node} > [d-touchcancel]`);
+      let touchend = document.querySelectorAll(`${node} > [d-touchend]`);
+      let touchmove = document.querySelectorAll(`${node} > [d-touchmove]`);
 
       ifs.forEach((item) => {
         ifNode(item, observable, item.attributes['d-if'].value)
+      });
+      classes.forEach((bind) => {
+        syncClass(bind, observable, bind.attributes['d-class'].value)
       });
       nodes.forEach((node) => {
         if (node.hasAttribute("value")) {
@@ -279,6 +333,9 @@ const Dome = function(els = ".lol", data = "", template = ``) {
         }
 
       });
+      once.forEach((one) => {
+          syncOnce(one, observable, one.attributes['d-once'].value)
+        });
       clicks.forEach((click) => {
         syncClicks(click, observable, click.attributes['d-click'].value)
       });
@@ -324,6 +381,7 @@ const Dome = function(els = ".lol", data = "", template = ``) {
       touchmove.forEach((click) => {
         syncTouchmove(click, observable, click.attributes['d-touchmove'].value)
       });
+      once = null;
     }
 
    this.updateText = function (property, e) {
@@ -336,11 +394,43 @@ const Dome = function(els = ".lol", data = "", template = ``) {
      this.el.style.top = x + "px";
      this.el.style.left = y + "px";
    };
-
    (() => {
      let elem = this.find(els)
-     elem.removeAttribute("d-cloak")
-   })()
+     if (elem.hasAttribute("d-cloak")) {
+       elem.removeAttribute("d-cloak")
+     }
+   })();
 };
 
 // Конец самой библиотеки
+
+const dom = new Dome(".lol", {
+  title: "Hello, world!",
+  head: "Text Node",
+  show: true,
+  classAdd: true,
+  methods: {
+    onclicking() {
+      alert("I am a " + dom.title)
+  },
+    reverseClassAdd() {
+    dom.classAdd = !dom.classAdd
+  },
+  revText() {
+    dom.head = dom.head.split("").reverse().join("");
+  }
+  }
+})
+
+const dem = new Dome(".kek", {
+  classAdd: true,
+  textContent: "Text Content",
+  methods: {
+    reverse() {
+      dem.classAdd = !dem.classAdd
+    },
+    revText() {
+      dem.textContent = dem.textContent.split("").reverse().join("");
+    }
+  }
+})
