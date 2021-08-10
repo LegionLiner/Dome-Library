@@ -23,11 +23,10 @@ const week = ["Воскресенье", "Понедельник", "Вторни�
 
 const Dome = function(els = ".lol", data = "", template = ``) {
    this.data = data;
-   this.$ = this.data.methods
-   this.find = function(els) {
+   this.find = (els) => {
       let node = document.querySelector(els)
       this.el = node;
-      return this
+      return node
    }
    this.hide = function() {
       this.el.style.display = "none"
@@ -246,6 +245,10 @@ const Dome = function(els = ".lol", data = "", template = ``) {
     function syncTouchmove(clickEL, data, proprety) {
       clickEL.addEventListener("touchmove", data.methods[proprety])
     }
+    function syncValue(node, observable, property) {
+      node.value = observable[property]
+      observe(property, () => node.value = observable[property])
+    }
     function parseDOM (node, observable) {
       let nodes = document.querySelectorAll(`${node} > [d-text]`)
       let ifs = document.querySelectorAll(`${node} > [d-if]`)
@@ -269,7 +272,12 @@ const Dome = function(els = ".lol", data = "", template = ``) {
         ifNode(item, observable, item.attributes['d-if'].value)
       });
       nodes.forEach((node) => {
-        syncNode(node, observable, node.attributes['d-text'].value)
+        if (node.hasAttribute("value")) {
+          syncValue(node, observable, node.attributes['d-text'].value)
+        } else {
+          syncNode(node, observable, node.attributes['d-text'].value)
+        }
+
       });
       clicks.forEach((click) => {
         syncClicks(click, observable, click.attributes['d-click'].value)
@@ -327,7 +335,12 @@ const Dome = function(els = ".lol", data = "", template = ``) {
      this.el.style.position = "absolute";
      this.el.style.top = x + "px";
      this.el.style.left = y + "px";
-   }
+   };
+
+   (() => {
+     let elem = this.find(els)
+     elem.removeAttribute("d-cloak")
+   })()
 };
 
 // Конец самой библиотеки
