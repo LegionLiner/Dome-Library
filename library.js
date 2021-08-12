@@ -22,9 +22,13 @@ const week = ["Воскресенье", "Понедельник", "Вторни�
 
 
 const Dome = function(els = "", data = "", template = ``) {
+  if (data.beforeCreated) {
+    data.beforeCreated()
+  }
   this.data = data;
+  this.nodes = [els]
+  let signals = {}
   for (let item in this.data) {
-
     if (item == "methods") {
       for (let items in this.data.methods) {
        this[items] = this.data.methods[items];
@@ -47,12 +51,37 @@ const Dome = function(els = "", data = "", template = ``) {
          },
 
          set(value) {
-           this.data[item] = value;
+           if (typeof this.data[item] == "object") {
+             this.data[item] += value;
+           } else {
+             this.data[item] = value;
+           }
+           observeData(this.data, this.nodes)
          }
        })
  //     }, 0);
-   }
+}
+/*
+if (typeof this.data[item] == "object") {
+  for (let variable in this.data[item]) {
+    if (typeof this.data[item][variable] != "function") {
+      Object.defineProperty(this.data[item], variable, {
+        get() {
+      //    console.log(variable, data[item][variable]);
+          return variable
+        },
+
+        set(value) {
+          variable = value
+        //  console.log(this.data[item][variable]);
+          observeData(this.data, this.nodes)
+        }
+      })
+    }
   }
+}
+*/
+}
   this.find = (els) => {
      let node = document.querySelector(els)
      this.el = node;
@@ -122,9 +151,22 @@ const Dome = function(els = "", data = "", template = ``) {
        timeEl = null;
      }
   }
+  this.destroy = () => {
+    if (this.data.destroyed) {
+      this.data.destroyed()
+    };
+    data.beforeCreated = null;
+    this.data.created = null;
+    this.data.destroyed = null;
+    this.data.reactive = null;
+    this.data.mounted = null;
+    this.data = null;
+    this.el = null;
+    this.nodes = null;
+    this.template = undefined;
+  }
 
   if (template != undefined) {
-     this.nodes = [els]
      this.temp = template;
      this.draw = (el) => {
        let node = document.querySelector(el)
@@ -152,16 +194,19 @@ const Dome = function(els = "", data = "", template = ``) {
          }
        }
      })}
+  if (this.data.created) {
+    this.data.created()
+  }
 
-   let signals = {}
+  // let signals = {}
    observeData(this.data, this.nodes)
    function hasChildrens(el, data) {
      if (el.children.length) {
        for (let item of el.children) {
-         item.classList.add("FNuhhfghvm23FUf")
-         parseDOM(".FNuhhfghvm23FUf", data)
-         item.classList.remove("FNuhhfghvm23FUf")
-         hasChildrens(item, data)
+           item.classList.add("FNuhhfghvm23FUf")
+           parseDOM(".FNuhhfghvm23FUf", data)
+           item.classList.remove("FNuhhfghvm23FUf")
+           hasChildrens(item, data)
        }
     }
    }
@@ -190,6 +235,7 @@ const Dome = function(els = "", data = "", template = ``) {
    }
    function makeReactive (obj, key, nodes) {
      let val = obj[key]
+//     console.log(obj, key, obj[key]);
      Object.defineProperty(obj, key, {
        get () {
          return val
@@ -197,18 +243,31 @@ const Dome = function(els = "", data = "", template = ``) {
        set (newVal) {
          val = newVal
          notify(key)
-         if (isBoolean(val)) {
+    //     if (isBoolean(val)) {
            for (let el of nodes) {
              parseDOM(el, obj)
            }
-         }
+      //   }
        }
      })
    }
    function observeData (obj, nodes) {
      for (let key in obj) {
        if (obj.hasOwnProperty(key)) {
-         makeReactive(obj, key, nodes)
+         if (typeof obj[key] == 'object') {
+           for (let kei in obj[key]) {
+             if (obj[key].hasOwnProperty(kei)) {
+               if (typeof obj[key] == 'object') {
+                   for (let el in obj[key]) {
+                     makeReactive(obj[key], el, nodes)
+                   }
+               }
+
+             }
+           }
+        } else {
+          makeReactive(obj, key, nodes)
+        }
        }
      }
      for (let el of nodes) {
@@ -338,6 +397,23 @@ const Dome = function(els = "", data = "", template = ``) {
        }
      }
    }
+   function syncFor(node, observable, property) {
+     let lol = property.slice(property.lastIndexOf(" ") + 1, property.length)
+     let nodeName = node.nodeName.toLowerCase()
+     let aboba = 0;
+     node.innerHTML = "";
+     for (let el in observable[lol]) {
+       aboba++
+     }
+     if (node.childElementCount < aboba) {
+       for (let el in observable[lol]) {
+         let li = document.createElement(nodeName);
+         li.innerHTML = observable[lol][el];
+         node.append(li)
+       }
+     }
+   }
+
    function parseDOM (node, observable) {
      let asHtml = document.querySelectorAll(`${node} > [d-html]`);
      let once = document.querySelectorAll(`${node} > [d-once]`);
@@ -359,6 +435,7 @@ const Dome = function(els = "", data = "", template = ``) {
      let touchcancel = document.querySelectorAll(`${node} > [d-touchcancel]`);
      let touchend = document.querySelectorAll(`${node} > [d-touchend]`);
      let touchmove = document.querySelectorAll(`${node} > [d-touchmove]`);
+     let dFor = document.querySelectorAll(`${node} > [d-for]`);
 
      ifs.forEach((item) => {
        ifNode(item, observable, item.attributes['d-if'].value)
@@ -444,9 +521,16 @@ const Dome = function(els = "", data = "", template = ``) {
        syncTouchmove(click, observable, click.attributes['d-touchmove'].value)
        hasChildrens(click, observable)
      });
+     dFor.forEach((item) => {
+       syncFor(item, observable, item.attributes['d-for'].value)
+      // hasChildrens(item, observable)
+     });
+
      once = null;
    }
-
+   if (this.data.reactive) {
+     this.data.reactive()
+   }
   let updateText = (property, e) => {
       this.data[property] = e.value
   }
@@ -464,13 +548,13 @@ const Dome = function(els = "", data = "", template = ``) {
     }
   })();
    // самовызывабщаяся функция для убирания d-cloak
-  if (this.data.mounted) {
-    this.data.mounted()
-  }
-  // выполняется сразу при готовности приложения
    let globalElement = document.querySelector(els);
    hasChildrens(globalElement, this.data)
-
+   // проверка наличия потомков у привязанного элемента
+   if (this.data.mounted) {
+     this.data.mounted()
+   }
+   // выполняется сразу при готовности приложения
 };
 
 // Конец самой библиотеки
