@@ -8,7 +8,7 @@
 ## Синтаксис
 
 ```js
-const dom = new Dome(".class") // создание Dome приложения и монтирование к элементу
+// создание Dome приложения и монтирование к элементу
 // принимает в аргументы элемент, данные, разметку
 const dom = new Dome(".class", {
   someData: {
@@ -26,25 +26,35 @@ const dom = new Dome(".class", {
 `)
 ```
 ## Изменения в HTML
-Dome может изменять HTML код, динамически связывать данные в приложении, компоненты, отрисовка по условию.
+Dome может изменять HTML код, динамически связывать данные в приложении, компоненты, 
+отрисовка по условию, циклы для списков (только не глубоко вложенные объекты).
 ```html
-<div d-if="show" class="lol">
-  <!-- разметка при условии show = true -->
-  <p d-text="title"></p> <!-- title заменяется на значение из данных -->
-</div>
-<div d-else>
-  <!-- разметка при условии show = false -->
-  <p d-text="text"></p> 
-</div>
+<div class="lol">
+  <div d-if="show">
+    <!-- разметка при условии show = true -->
+    <p d-text="title"></p> <!-- title заменяется на значение из данных -->
+  </div>
+  <div d-else>
+    <!-- разметка при условии show = false -->
+    <p d-text="text"></p> 
+  </div>
 
-<input type="text" value="" d-text="head"> 
-<!-- также input может изменять значение в данных и вывод на экран, двухсторонняя привязка данных -->
-
+  <input type="text" value="" d-text="head"> 
+  <!-- также input может изменять значение в данных и вывод на экран, двухсторонняя привязка данных -->
+  
+  <p d-for="item in obj"></p>
+</div>
+  
 <script>
 const dom = new Dome(".lol", {
   title: "Hello, world!",
   text: "Bye, world!"
-  show: true 
+  show: true,
+  obj: {
+  el1: "text1",
+  el2: "text2",
+  el3: "text3"
+  }
 })
   
   dom.show = false // при изменении условия будет перерисовываться DOM в зависимости от изменений
@@ -98,7 +108,7 @@ const dom = new Dome(".element", {
 ```js
 const dom = new Dome(".el")
 
-const doom = new Dome("div")
+const dim = new Dome("div")
 
 const dem = new Dome(".element", {
  // данные, методы
