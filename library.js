@@ -562,20 +562,4 @@ const Dome = function(els = "", data = "", template = ``) {
 
 // Конец самой библиотеки
 
-const dom = new Dome(".lol", {
-  obj: {
-    lol: "loljkek",
-    kek: "kekjlol",
-    datas: {
-      lol: "lolkek",
-      kek: "keklol"
-    }
-  },
-  texti: "Hello",
-  show: true,
-  methods: {
-    reverse() {
-      dom.show = !dom.show;
-    }
-  }
-})
+
