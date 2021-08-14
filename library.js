@@ -38,13 +38,11 @@ const Dome = function(els = "", data = "", template = ``) {
     },
     set(target, key, value) {
       target[key] = value;
-      for (let node of nodes) {
-        parseDOM(node, data)
-      }
       return true
     }
   }
   this.data = new Proxy(data, validator);
+  // перезаписываем data, делая его прокси обьектом
   let signals = {}
 
   for (let item in this.data) {
@@ -247,13 +245,14 @@ const Dome = function(els = "", data = "", template = ``) {
      if(!signals[signal] || signals[signal].length < 1) return
      // Выходим из функции, если нет
      // соответствующих обработчиков сигнала
-
+     console.log(signals);
      signals[signal].forEach((signalHandler) => signalHandler())
      // Мы вызываем все обработчики, которые
      // следят за данным свойством
    }
    function makeReactive (obj, key, nodes) {
      let val = obj[key]
+
      // реактивность, устанавливаем геттеры и сеттеры
      Object.defineProperty(obj, key, {
        get () {
@@ -262,29 +261,30 @@ const Dome = function(els = "", data = "", template = ``) {
        set (newVal) {
          val = newVal
          notify(key) // добавляем обработчик
-         /*
          if (isBoolean(val)) {
            for (let el of nodes) {
              parseDOM(el, obj) // если значение булевое - парсим DOM
            }
          }
-         */
        }
      })
    }
    function observeData (obj, nodes) {
-     for (let key in obj) {
-       if (obj.hasOwnProperty(key)) {
-          makeReactive(obj, key, nodes)
-          // каждому свойству data добавляем реактивность
-       }
-     }
+
+      for (let key in obj) {
+        if (obj.hasOwnProperty(key)) {
+           makeReactive(obj, key, nodes)
+           // каждому свойству data добавляем реактивность
+        }
+      }
+
      for (let el of nodes) {
        parseDOM(el, obj) // и парсим DOM в первый раз, отрисовывая
                          // все реактивные свойства
      }
    }
    function syncNode (node, observable, property) {
+     console.log(node, observable, property);
      node.textContent = observable[property]
      observe(property, () => node.textContent = observable[property])
      // синхронизируем текст у node и уведомляем обработчик
@@ -325,6 +325,7 @@ const Dome = function(els = "", data = "", template = ``) {
          ifEl.nextElementSibling.style.display = "none";
        }
      }
+     signals = {}
    }
    function syncValue(node, observable, property) {
      node.value = observable[property] // значение инпута
@@ -332,7 +333,7 @@ const Dome = function(els = "", data = "", template = ``) {
     node.addEventListener("input", () => {
        updateText(property, node) // привязываем input к property
     })
-    observe(property, () => node.value = observable[property])
+//    observe(property, () => node.value = observable[property])
     // уведомляем обработчик
    }
    function syncClass(node, observable, property) {
@@ -342,7 +343,7 @@ const Dome = function(els = "", data = "", template = ``) {
        if (observable[item]) {
          // если значение true - добавляем класс
          node.classList.add(classJSON[item])
-         observe(item, () => node.value = observable[item])
+      //   observe(item, () => node.value = observable[item])
          // уведомляем обработчик
        } else {
          // иначе удаляем этот класс
