@@ -1,3 +1,4 @@
+
 {
 try {
   let styles = document.createElement("link");
@@ -16,6 +17,7 @@ try {
     document.head.append(styles2);
 }
 }
+console
 // предустановка стилей
 // Начало самой библиотеки
 const month = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
@@ -146,7 +148,7 @@ const Dome = function(els = "", data = "", template = ``) {
   this.Visibility = function () {
      this.RemoveClass("hideInLibrary")
      this.Class("showInLibrary")
-     this.show()
+     this.Show()
   }
   // показать элемент с анимацией
   this.AddChild = function (el, text) {
@@ -245,7 +247,6 @@ const Dome = function(els = "", data = "", template = ``) {
      if(!signals[signal] || signals[signal].length < 1) return
      // Выходим из функции, если нет
      // соответствующих обработчиков сигнала
-     console.log(signals);
      signals[signal].forEach((signalHandler) => signalHandler())
      // Мы вызываем все обработчики, которые
      // следят за данным свойством
@@ -284,7 +285,6 @@ const Dome = function(els = "", data = "", template = ``) {
      }
    }
    function syncNode (node, observable, property) {
-     console.log(node, observable, property);
      node.textContent = observable[property]
      observe(property, () => node.textContent = observable[property])
      // синхронизируем текст у node и уведомляем обработчик
@@ -561,3 +561,21 @@ const Dome = function(els = "", data = "", template = ``) {
 };
 
 // Конец самой библиотеки
+
+const dom = new Dome(".lol", {
+  obj: {
+    lol: "loljkek",
+    kek: "kekjlol",
+    datas: {
+      lol: "lolkek",
+      kek: "keklol"
+    }
+  },
+  texti: "Hello",
+  show: true,
+  methods: {
+    reverse() {
+      dom.show = !dom.show;
+    }
+  }
+})
