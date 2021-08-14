@@ -27,13 +27,29 @@ const Dome = function(els = "", data = "", template = ``) {
     data.beforeCreated()
   }
   // хук beforeCreated
-  this.data = data;
   this.nodes = [els]
+  let validator = {
+    get(target, key) {
+      if (typeof target[key] == "object" && target[key] !== null) {
+        return new Proxy(target[key], validator)
+      } else {
+        return target[key]
+      }
+    },
+    set(target, key, value) {
+      target[key] = value;
+      for (let node of nodes) {
+        parseDOM(node, data)
+      }
+      return true
+    }
+  }
+  this.data = new Proxy(data, validator);
   let signals = {}
+
   for (let item in this.data) {
     if (item == "methods") {
       for (let items in this.data.methods) {
-      // this[items] = this.data.methods[items];
      Object.defineProperty(this, items, {
        get() {
          return this.data.methods[items]
@@ -45,22 +61,18 @@ const Dome = function(els = "", data = "", template = ``) {
      })
      }
    } else {
-       this[item] = this.data[item];
      Object.defineProperty(this, item, {
          get() {
            return this.data[item]
          },
 
          set(value) {
-           if (typeof this.data[item] == "object") {
-             this.data[item] += value;
-           } else {
-             this.data[item] = value;
-           }
+           this.data[item] = value;
          }
        })
      }
    }
+
    // укорачиваю синтаксис поиска
   this.find = (els) => {
      let node = document.querySelector(els)
@@ -68,78 +80,78 @@ const Dome = function(els = "", data = "", template = ``) {
      return node
   }
   // внутренняя функция поиска элемента
-  this.hide = function() {
+  this.Hide = function() {
      this.el.style.display = "none"
   }
   // спрятать элемента
-  this.show = function(el) {
+  this.Show = function(el) {
      this.el.style.display = "block"
   }
   // показать элемент
-  this.toggle = function() {
+  this.Toggle = function() {
      this.el.style.display == "none" ? this.el.style.display = "block" : this.el.style.display = "none"
   }
   // переключить показывание/скрытие
-  this.class = function(className) {
+  this.Class = function(className) {
      this.el.classList.add(className)
   }
   // добавить класс
-  this.removeClass = function(className) {
+  this.RemoveClass = function(className) {
      this.el.classList.remove(className)
   }
   // удалить класс
-  this.text = function(text) {
+  this.Text = function(text) {
      this.el.textContent = text;
   }
   // заменить текст
-  this.append = function(text) {
+  this.Append = function(text) {
      this.el.textContent = `${this.el.textContent} ${text}`
   }
   // добавить текст в конец
-  this.act = function(fun, event) {
+  this.Act = function(fun, event) {
      this.el.addEventListener(event, fun)
   }
   // добавить событие
-  this.css = function (text) {
+  this.Css = function (text) {
      this.el.style.cssText = text
   }
   // добавить код CSS
-  this.year = function() {
+  this.Year = function() {
      let now = new Date();
      return now.getFullYear()
   }
   // показать год
-  this.month = function() {
+  this.Month = function() {
      let now = new Date().getMonth();
      return month[now]
   }
   // показать месяц
-  this.day = function() {
+  this.Day = function() {
      let now = new Date();
      let date = now.getDate();
      return `Сегодня ${date} число, ${week[now.getDay()]}`
   }
   // показать день
-  this.time = function () {
+  this.Time = function () {
      let now = new Date();
      return `${now.getHours()}:${now.getMinutes()}`
   }
   // показать время
-  this.invisibility = function() {
-     this.removeClass("showInLibrary")
-     this.class("hideInLibrary")
+  this.Invisibility = function() {
+     this.RemoveClass("showInLibrary")
+     this.Class("hideInLibrary")
      setTimeout(() => {
        this.el.style.display = "none"
      }, 701);
   }
   // скрыть элемент с анимацией
-  this.visibility = function () {
-     this.removeClass("hideInLibrary")
-     this.class("showInLibrary")
+  this.Visibility = function () {
+     this.RemoveClass("hideInLibrary")
+     this.Class("showInLibrary")
      this.show()
   }
   // показать элемент с анимацией
-  this.addChild = function (el, text) {
+  this.AddChild = function (el, text) {
      if (this.el.firstChild) {
        let timeEl = document.createElement(el);
        timeEl.innerHTML = text;
@@ -148,7 +160,7 @@ const Dome = function(els = "", data = "", template = ``) {
      }
   }
   // добавить потомка
-  this.tp = function (data) {
+  this.Tp = function (data) {
     let x = data.toX;
     let y = data.toY;
     this.el.style.position = "absolute";
@@ -250,11 +262,13 @@ const Dome = function(els = "", data = "", template = ``) {
        set (newVal) {
          val = newVal
          notify(key) // добавляем обработчик
+         /*
          if (isBoolean(val)) {
            for (let el of nodes) {
              parseDOM(el, obj) // если значение булевое - парсим DOM
            }
          }
+         */
        }
      })
    }
@@ -315,11 +329,11 @@ const Dome = function(els = "", data = "", template = ``) {
    function syncValue(node, observable, property) {
      node.value = observable[property] // значение инпута
                                        // равно значению property
-     node.addEventListener("input", () => {
-     updateText(property, node) // привязываем input к property
-     })
-     observe(property, () => node.value = observable[property])
-     // уведомляем обработчик
+    node.addEventListener("input", () => {
+       updateText(property, node) // привязываем input к property
+    })
+    observe(property, () => node.value = observable[property])
+    // уведомляем обработчик
    }
    function syncClass(node, observable, property) {
      let classJSON = JSON.parse(property)
@@ -344,19 +358,37 @@ const Dome = function(els = "", data = "", template = ``) {
      let lol = property.slice(property.lastIndexOf(" ") + 1, property.length)
      // узнаем значение, которое требуется искать в data
      let nodeName = node.nodeName.toLowerCase() // узнаем имя node
+     let deleteNode = false;
+     node.innerHTML = ""
+     if (nodeName == "ul" || nodeName == "ol") {
+       nodeName = "li";
+     }
      let childCount = 0; // счётчик для единоразовой отрисовки
-     node.innerHTML = "";
-     for (let el in observable[lol]) {
+  eval(`
+       for (let el in observable.${lol}) {
        childCount++ // рисуем DOM столько раз, сколько значений в observable[lol]
      }
+     node.childElementCount = 0;
      if (node.childElementCount < childCount) {
        // пока потомков меньше, чем нужно,
-       // рисуем нового с данными из observable[lol][el]
-       for (let el in observable[lol]) {
-         let li = document.createElement(nodeName);
-         li.innerHTML = observable[lol][el];
-         node.append(li) // добавляем нового потомка в конец node
-       }
+       // рисуем нового с данными из observable[lol][el] .datas
+         for (let el in observable.${lol}) {
+           if (typeof observable.${lol}[el] != "object") {
+             let li = document.createElement(nodeName);
+             li.innerHTML = observable.${lol}[el];
+              // добавляем нового потомка в конец node или перед node
+          if (node.nodeName.toLowerCase() != "ul" && node.nodeName.toLowerCase() != "ol") {
+              deleteNode = true;
+              node.insertAdjacentElement("beforeBegin", li);
+            } else {
+              node.append(li)
+            }
+           }
+         }
+     }
+        `)
+     if (deleteNode) {
+       node.remove()
      }
    }
 
