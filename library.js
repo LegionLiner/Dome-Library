@@ -1,4 +1,4 @@
-
+let date = new Date()
 {
 try {
   let styles = document.createElement("link");
@@ -17,7 +17,6 @@ try {
     document.head.append(styles2);
 }
 }
-console
 // предустановка стилей
 // Начало самой библиотеки
 const month = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
@@ -30,16 +29,24 @@ const Dome = function(els = "", data = "", template = ``) {
   }
   // хук beforeCreated
   this.nodes = [els]
+  this.customs = []
   let validator = {
     get(target, key) {
       if (typeof target[key] == "object" && target[key] !== null) {
+      //  console.log(target[key], `- Proxy Object`);
         return new Proxy(target[key], validator)
       } else {
+        if (typeof target[key] == "function") {
+      //    console.log(target[key], `- Proxy function`);
+        } else {
+      //    console.log(target[key], `- Proxy`);
+        }
         return target[key]
       }
     },
     set(target, key, value) {
       target[key] = value;
+  //    console.log(value, `- Proxy SET`);
       return true
     }
   }
@@ -52,31 +59,36 @@ const Dome = function(els = "", data = "", template = ``) {
       for (let items in this.data.methods) {
      Object.defineProperty(this, items, {
        get() {
+      //   console.log(this.data.methods[items] `- data get function`);
          return this.data.methods[items]
        },
 
        set(value) {
          this.data.methods[items] = value;
+      //   console.log(value `- data get function`);
        }
      })
      }
    } else {
      Object.defineProperty(this, item, {
          get() {
+        //   console.log(`${this.data[item]} - data get`);
            return this.data[item]
          },
 
          set(value) {
            this.data[item] = value;
+        //   console.log(`${value} - data get`);
          }
        })
      }
    }
-
    // укорачиваю синтаксис поиска
+
   this.find = (els) => {
      let node = document.querySelector(els)
      this.el = node;
+  //   console.log(node, "- node");
      return node
   }
   // внутренняя функция поиска элемента
@@ -188,13 +200,15 @@ const Dome = function(els = "", data = "", template = ``) {
     this.nodes = null;
   }
   // удаление приложения
-  if (template != undefined) {
+  if (template != "") {
      this.temp = template;
+  //   console.log(`${this.temp} - Template`);
      // разметка
      this.draw = (el) => {
        let node = document.querySelector(el)
          node.innerHTML = this.temp
          this.nodes.push(el)
+         console.log(this.nodes, "- all nodes");
          observeData(data, this.nodes)
      }
      // функция отрисовки (внешняя)
@@ -242,6 +256,7 @@ const Dome = function(els = "", data = "", template = ``) {
      // Помещаем обработчик signalHandler
      // в массив сигналов, который фактически
      // является массивом функций обратного вызова
+  //   console.log(signals, "- signals");
    }
    function notify (signal) {
      if(!signals[signal] || signals[signal].length < 1) return
@@ -304,13 +319,15 @@ const Dome = function(els = "", data = "", template = ``) {
        ifEl.style.display = "none";
        // если ложно - скрываем элемент и проверяем,
        // есть ли сосед с атрибутом d-else
-       if (ifEl.nextElementSibling.hasAttribute("d-else")) {
-         if (ifEl.nextElementSibling.nextSibling.nodeName == "#text") {
-           ifEl.nextElementSibling.style.display = "inline";
-           // для текста стиль inline
-         } else {
-           ifEl.nextElementSibling.style.display = "block";
-           // для остального стиль block
+       if (ifEl.nextElementSibling) {
+         if (ifEl.nextElementSibling.hasAttribute("d-else")) {
+           if (ifEl.nextElementSibling.nextSibling.nodeName == "#text") {
+             ifEl.nextElementSibling.style.display = "inline";
+             // для текста стиль inline
+           } else {
+             ifEl.nextElementSibling.style.display = "block";
+             // для остального стиль block
+           }
          }
        }
      } else {
@@ -321,8 +338,10 @@ const Dome = function(els = "", data = "", template = ``) {
        } else {
          ifEl.style.display = "block";
        }
-       if (ifEl.nextElementSibling.hasAttribute("d-else")) {
-         ifEl.nextElementSibling.style.display = "none";
+       if (ifEl.nextElementSibling) {
+         if (ifEl.nextElementSibling.hasAttribute("d-else")) {
+           ifEl.nextElementSibling.style.display = "none";
+         }
        }
      }
      signals = {}
@@ -546,20 +565,43 @@ const Dome = function(els = "", data = "", template = ``) {
    }
    // хук реактивности, реактивность готова
 
-  (() => {
-    let elem = this.find(els)
-    if (elem.hasAttribute("d-cloak")) {
-      elem.removeAttribute("d-cloak")
-    }
-  })();
-  // самовызывабщаяся функция для убирания d-cloak
+   this.custom = function (name, datas) {
+     let template = datas.template;
+     let customData = Object.assign({}, data, datas);
+     this.customs.push(name);
+
+     class a extends HTMLElement {
+       constructor() {
+         super()
+            this.data = customData
+            this.data.$elName = name
+            this.data.$el = document.querySelector(name)
+       }
+       connectedCallback() {
+        // let allData = this.getAttribute('data')
+         this.innerHTML = template
+       }
+     }
+     customElements.define(name, a);
+     parseDOM(name, this.data)
+     // парс DOM для элемента
+     if (datas.defined) {
+       datas.defined()
+     }
+   }
 
    if (this.data.mounted) {
      this.data.mounted()
    }
    // хук mounted, выполняется сразу при готовности приложения
+
+   (() => {
+     let elem = this.find(els)
+     if (elem.hasAttribute("d-cloak")) {
+       elem.removeAttribute("d-cloak")
+     }
+   })();
+   // самовызывабщаяся функция для убирания d-cloak
 };
 
 // Конец самой библиотеки
-
-
