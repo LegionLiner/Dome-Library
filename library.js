@@ -1,4 +1,3 @@
-let date = new Date()
 {
 try {
   let styles = document.createElement("link");
@@ -18,9 +17,11 @@ try {
 }
 }
 // предустановка стилей
+
 // Начало самой библиотеки
 const month = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
 const week = ["Воскресенье", "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"]
+let signals = {}
 // нужные константы.
 
 const Dome = function(els = "", data = "", template = ``) {
@@ -29,56 +30,50 @@ const Dome = function(els = "", data = "", template = ``) {
   }
   // хук beforeCreated
   this.nodes = [els]
-  this.customs = []
+  let mustaches = {};
+  this.customs = {}
   let validator = {
     get(target, key) {
       if (typeof target[key] == "object" && target[key] !== null) {
-      //  console.log(target[key], `- Proxy Object`);
         return new Proxy(target[key], validator)
       } else {
-        if (typeof target[key] == "function") {
-      //    console.log(target[key], `- Proxy function`);
+/*        if (typeof target[key] == "function") {
         } else {
-      //    console.log(target[key], `- Proxy`);
-        }
+        }*/
         return target[key]
       }
     },
     set(target, key, value) {
       target[key] = value;
-  //    console.log(value, `- Proxy SET`);
       return true
     }
   }
-  this.data = new Proxy(data, validator);
+  this.props = {}
+  this.data = Object.assign({}, data, this.props)
+  this.data = new Proxy(this.data, validator);
   // перезаписываем data, делая его прокси обьектом
-  let signals = {}
 
   for (let item in this.data) {
     if (item == "methods") {
       for (let items in this.data.methods) {
      Object.defineProperty(this, items, {
        get() {
-      //   console.log(this.data.methods[items] `- data get function`);
          return this.data.methods[items]
        },
 
        set(value) {
          this.data.methods[items] = value;
-      //   console.log(value `- data get function`);
        }
      })
      }
-   } else {
+   } else if (item != "computed") {
      Object.defineProperty(this, item, {
          get() {
-        //   console.log(`${this.data[item]} - data get`);
            return this.data[item]
          },
 
          set(value) {
            this.data[item] = value;
-        //   console.log(`${value} - data get`);
          }
        })
      }
@@ -88,44 +83,52 @@ const Dome = function(els = "", data = "", template = ``) {
   this.find = (els) => {
      let node = document.querySelector(els)
      this.el = node;
-  //   console.log(node, "- node");
      return node
   }
   // внутренняя функция поиска элемента
   this.Hide = function() {
      this.el.style.display = "none"
+     return this;
   }
   // спрятать элемента
   this.Show = function(el) {
      this.el.style.display = "block"
+     return this;
   }
   // показать элемент
   this.Toggle = function() {
      this.el.style.display == "none" ? this.el.style.display = "block" : this.el.style.display = "none"
+     return this;
   }
   // переключить показывание/скрытие
   this.Class = function(className) {
      this.el.classList.add(className)
+     return this;
   }
   // добавить класс
   this.RemoveClass = function(className) {
      this.el.classList.remove(className)
+     return this;
   }
   // удалить класс
   this.Text = function(text) {
      this.el.textContent = text;
+     return this;
   }
   // заменить текст
   this.Append = function(text) {
      this.el.textContent = `${this.el.textContent} ${text}`
+     return this;
   }
   // добавить текст в конец
   this.Act = function(fun, event) {
      this.el.addEventListener(event, fun)
+     return this;
   }
   // добавить событие
   this.Css = function (text) {
      this.el.style.cssText = text
+     return this;
   }
   // добавить код CSS
   this.Year = function() {
@@ -155,12 +158,14 @@ const Dome = function(els = "", data = "", template = ``) {
      setTimeout(() => {
        this.el.style.display = "none"
      }, 701);
+     return this;
   }
   // скрыть элемент с анимацией
   this.Visibility = function () {
      this.RemoveClass("hideInLibrary")
      this.Class("showInLibrary")
      this.Show()
+     return this;
   }
   // показать элемент с анимацией
   this.AddChild = function (el, text) {
@@ -170,6 +175,7 @@ const Dome = function(els = "", data = "", template = ``) {
        this.el.append(timeEl);
        timeEl = null;
      }
+     return this;
   }
   // добавить потомка
   this.Tp = function (data) {
@@ -178,6 +184,7 @@ const Dome = function(els = "", data = "", template = ``) {
     this.el.style.position = "absolute";
     this.el.style.top = x + "px";
     this.el.style.left = y + "px";
+    return this;
   };
   // перемещение элемента на заданную позицию
   this.destroy = () => {
@@ -198,18 +205,19 @@ const Dome = function(els = "", data = "", template = ``) {
     els = null;
     this.template = "";
     this.nodes = null;
+    this.customs = null;
+    this.props = null;
   }
   // удаление приложения
   if (template != "") {
      this.temp = template;
-  //   console.log(`${this.temp} - Template`);
      // разметка
      this.draw = (el) => {
        let node = document.querySelector(el)
          node.innerHTML = this.temp
          this.nodes.push(el)
-         console.log(this.nodes, "- all nodes");
          observeData(data, this.nodes)
+         return this;
      }
      // функция отрисовки (внешняя)
      this._anonimDraw = (el) => {
@@ -217,10 +225,12 @@ const Dome = function(els = "", data = "", template = ``) {
          node.innerHTML = this.temp
          observeData(data, this.nodes)
      }
+     this._anonimDraw(els)
      // внутренняя отрисовка
      this.erase = (el) => {
        let node = document.querySelector(el)
        node.innerHTML = ""
+       return this;
      }
      // отчистить элемент
      Object.defineProperty(this, 'template', {
@@ -236,71 +246,25 @@ const Dome = function(els = "", data = "", template = ``) {
          }
        }
      })}
+  // разметка
   if (this.data.created) {
     this.data.created()
   }
   // хук created
 
   // начало реактивности
-   observeData(this.data, this.nodes)
-   function isBoolean(n) {
-     return typeof n === 'boolean';
-   }
-   function observe (property, signalHandler) {
-     if(!signals[property]) signals[property] = []
-     // Если для данного свойства нет сигнала,
-     // мы создаем его и помещаем туда массив
-     // для хранения обработчиков
+  let dep = {
+    target: null
+  }
+   observeData(this.data, this.nodes, this)
 
-     signals[property].push(signalHandler)
-     // Помещаем обработчик signalHandler
-     // в массив сигналов, который фактически
-     // является массивом функций обратного вызова
-  //   console.log(signals, "- signals");
-   }
-   function notify (signal) {
-     if(!signals[signal] || signals[signal].length < 1) return
-     // Выходим из функции, если нет
-     // соответствующих обработчиков сигнала
-     signals[signal].forEach((signalHandler) => signalHandler())
-     // Мы вызываем все обработчики, которые
-     // следят за данным свойством
-   }
-   function makeReactive (obj, key, nodes) {
-     let val = obj[key]
-
-     // реактивность, устанавливаем геттеры и сеттеры
-     Object.defineProperty(obj, key, {
-       get () {
-         return val
-       },
-       set (newVal) {
-         val = newVal
-         notify(key) // добавляем обработчик
-         if (isBoolean(val)) {
-           for (let el of nodes) {
-             parseDOM(el, obj) // если значение булевое - парсим DOM
-           }
-         }
-       }
-     })
-   }
-   function observeData (obj, nodes) {
-
-      for (let key in obj) {
-        if (obj.hasOwnProperty(key)) {
-           makeReactive(obj, key, nodes)
-           // каждому свойству data добавляем реактивность
-        }
-      }
-
-     for (let el of nodes) {
-       parseDOM(el, obj) // и парсим DOM в первый раз, отрисовывая
-                         // все реактивные свойства
-     }
-   }
    function syncNode (node, observable, property) {
-     node.textContent = observable[property]
+     if (property.indexOf(".") >= 0) {
+       let prop = eval(`observable.${property}`)
+       node.textContent = prop
+     } else {
+       node.textContent = observable[property]
+     }
      observe(property, () => node.textContent = observable[property])
      // синхронизируем текст у node и уведомляем обработчик
    }
@@ -341,18 +305,23 @@ const Dome = function(els = "", data = "", template = ``) {
        if (ifEl.nextElementSibling) {
          if (ifEl.nextElementSibling.hasAttribute("d-else")) {
            ifEl.nextElementSibling.style.display = "none";
+           ifEl.nextElementSibling.removeAttribute("d-once")
          }
        }
      }
      signals = {}
    }
    function syncValue(node, observable, property) {
-     node.value = observable[property] // значение инпута
-                                       // равно значению property
+     if (property.indexOf(".") >= 0) {
+       let prop = eval(`observable.${property}`)
+       node.value = prop
+     } else {
+       node.value = observable[property]
+     } // значение инпута
+      // равно значению property
     node.addEventListener("input", () => {
        updateText(property, node) // привязываем input к property
     })
-//    observe(property, () => node.value = observable[property])
     // уведомляем обработчик
    }
    function syncClass(node, observable, property) {
@@ -362,7 +331,6 @@ const Dome = function(els = "", data = "", template = ``) {
        if (observable[item]) {
          // если значение true - добавляем класс
          node.classList.add(classJSON[item])
-      //   observe(item, () => node.value = observable[item])
          // уведомляем обработчик
        } else {
          // иначе удаляем этот класс
@@ -384,7 +352,7 @@ const Dome = function(els = "", data = "", template = ``) {
        nodeName = "li";
      }
      let childCount = 0; // счётчик для единоразовой отрисовки
-  eval(`
+   eval(`
        for (let el in observable.${lol}) {
        childCount++ // рисуем DOM столько раз, сколько значений в observable[lol]
      }
@@ -411,55 +379,249 @@ const Dome = function(els = "", data = "", template = ``) {
        node.remove()
      }
    }
+   function syncStyle(node, observable, property) {
+     let styleJson = JSON.parse(property)
+     for (let variable in styleJson) {
+       node.style[variable] = observable[styleJson[variable]]
+       observe(styleJson[variable], () => node.style[variable] = observable[styleJson[variable]])
+     }
+   }
 
    // внизу куча EventListener на свой атрибут
    function syncClicks(clickEL, data, proprety) {
-     clickEL.addEventListener("click", data.methods[proprety])
+    if (proprety.startsWith("$")) {
+      let event = proprety.slice(1, proprety.length)
+      clickEL.addEventListener("click", data.$methods[event])
+      return
+    }
+    clickEL.addEventListener("click", data.methods[proprety])
+    clickEL.removeAttribute("d-click")
    }
    function syncDblclick(clickEL, data, proprety) {
+     if (proprety.startsWith("$")) {
+       let event = proprety.slice(1, proprety.length)
+       clickEL.addEventListener("dblclick", data.$methods[event])
+       return
+     }
      clickEL.addEventListener("dblclick", data.methods[proprety])
    }
    function syncMousedown(clickEL, data, proprety) {
+     if (proprety.startsWith("$")) {
+       let event = proprety.slice(1, proprety.length)
+       clickEL.addEventListener("mousedown", data.$methods[event])
+       return
+     }
      clickEL.addEventListener("mousedown", data.methods[proprety])
    }
    function syncMouseup(clickEL, data, proprety) {
+     if (proprety.startsWith("$")) {
+       let event = proprety.slice(1, proprety.length)
+       clickEL.addEventListener("mouseup", data.$methods[event])
+       return
+     }
      clickEL.addEventListener("mouseup", data.methods[proprety])
    }
    function syncSelect(clickEL, data, proprety) {
+     if (proprety.startsWith("$")) {
+       let event = proprety.slice(1, proprety.length)
+       clickEL.addEventListener("select", data.$methods[event])
+       return
+     }
      clickEL.addEventListener("select", data.methods[proprety])
    }
    function syncMouseenter(clickEL, data, proprety) {
+     if (proprety.startsWith("$")) {
+       let event = proprety.slice(1, proprety.length)
+       clickEL.addEventListener("mouseenter", data.$methods[event])
+       return
+     }
      clickEL.addEventListener("mouseenter", data.methods[proprety])
    }
    function syncmMuseleave(clickEL, data, proprety) {
+     if (proprety.startsWith("$")) {
+       let event = proprety.slice(1, proprety.length)
+       clickEL.addEventListener("mouseleave", data.$methods[event])
+       return
+     }
      clickEL.addEventListener("mouseleave", data.methods[proprety])
    }
    function syncMousemove(clickEL, data, proprety) {
+     if (proprety.startsWith("$")) {
+       let event = proprety.slice(1, proprety.length)
+       clickEL.addEventListener("mousemove", data.$methods[event])
+       return
+     }
      clickEL.addEventListener("mousemove", data.methods[proprety])
    }
    function syncMouseover(clickEL, data, proprety) {
+     if (proprety.startsWith("$")) {
+       let event = proprety.slice(1, proprety.length)
+       clickEL.addEventListener("mouseover", data.$methods[event])
+       return
+     }
      clickEL.addEventListener("mouseover", data.methods[proprety])
    }
    function syncDrag(clickEL, data, proprety) {
+     if (proprety.startsWith("$")) {
+       let event = proprety.slice(1, proprety.length)
+       clickEL.addEventListener("drag", data.$methods[event])
+       return
+     }
      clickEL.addEventListener("drag", data.methods[proprety])
    }
    function syncDrop(clickEL, data, proprety) {
+     if (proprety.startsWith("$")) {
+       let event = proprety.slice(1, proprety.length)
+       clickEL.addEventListener("drop", data.$methods[event])
+       return
+     }
      clickEL.addEventListener("drop", data.methods[proprety])
    }
    function syncTouchcancel(clickEL, data, proprety) {
+     if (proprety.startsWith("$")) {
+       let event = proprety.slice(1, proprety.length)
+       clickEL.addEventListener("touchcancel", data.$methods[event])
+       return
+     }
      clickEL.addEventListener("touchcancel", data.methods[proprety])
    }
    function syncTouchstart(clickEL, data, proprety) {
+     if (proprety.startsWith("$")) {
+       let event = proprety.slice(1, proprety.length)
+       clickEL.addEventListener("touchstart", data.$methods[event])
+       return
+     }
      clickEL.addEventListener("touchstart", data.methods[proprety])
    }
    function syncTouchend(clickEL, data, proprety) {
+     if (proprety.startsWith("$")) {
+       let event = proprety.slice(1, proprety.length)
+       clickEL.addEventListener("touchend", data.$methods[event])
+       return
+     }
      clickEL.addEventListener("touchend", data.methods[proprety])
    }
    function syncTouchmove(clickEL, data, proprety) {
+     if (proprety.startsWith("$")) {
+       let event = proprety.slice(1, proprety.length)
+       clickEL.addEventListener("touchmove", data.$methods[event])
+       return
+     }
      clickEL.addEventListener("touchmove", data.methods[proprety])
    }
+   function selfRender(node, observable, property) {
+     for (let variable in observable) {
+       if (property.startsWith(variable)) {
+         let lol = property.slice(property.lastIndexOf(":") + 2, property.length)
+         observable[variable] = lol
 
-   function parseDOM (node, observable) {
+         node.textContent = observable[variable]
+         observe(property, () => node.textContent = observable[variable])
+       }
+     }
+   }
+   function syncInpt(node, observable, property) {
+     if (property.startsWith("$")) {
+       let event = property.slice(1, property.length)
+       node.addEventListener("input", observable.$methods[event])
+       return
+     }
+     node.addEventListener("input", observable.methods[property])
+   }
+   function syncBind(node, observable, property, ttois) {
+     for (let variable in observable) {
+       if (property.startsWith(variable)) {
+         let lol = property.slice(property.lastIndexOf(":") + 2, property.length)
+         node.setAttribute(lol, observable[variable])
+         observe(variable, () => node.setAttribute(lol, observable[variable]))
+        for (let variable in ttois) {
+          if (variable == "customs") {
+          }
+        }
+       }
+     }
+   }
+   // для массива из точенной нотации
+   function nesting(value, observable, params) {
+     let remainder = []
+     if (params) {
+       remainder = params
+     }
+     let indexOne = value.indexOf(".")
+     let item = value.slice(0, indexOne)
+     value = value.slice(indexOne + 1)
+
+     if (value.indexOf(".") >= 0) {
+       remainder.push(item)
+       nesting(value, observable, remainder)
+     } else {
+       remainder.push(item)
+       remainder.push(value)
+       recurs(remainder, observable)
+     }
+   }
+
+   function syncVM(node, observable, inner) {
+     let text = node.innerHTML;
+     if (inner) {
+       text = inner
+     }
+     let indexOne = text.indexOf("{{")
+     let indexTwo = text.indexOf("}}")
+     if (indexOne >= 0) {
+       if (indexOne == 0) {
+         if (indexTwo) {
+             let value = text.slice(indexOne + 2, indexTwo).trim()
+
+             if (value.indexOf(".") >= 0) {
+               var prop = eval(`observable.${value}`)
+               mustaches[text] = node;
+               text = prop + text.slice(indexTwo + 2, text.length)
+             } else {
+               mustaches[text] = node;
+               text = observable[value] + text.slice(indexTwo + 2, text.length)
+             }
+             node.innerHTML = text
+               observe(value, () => {
+                 for (let variable in mustaches) {
+                   if (mustaches[variable] == node) {
+                      syncVM(node, observable, variable)
+                   }
+                 }
+               })
+         }
+         if (node.innerHTML.indexOf("{{") > 0) {
+           syncVM(node, observable)
+         }
+       } else {
+         if (indexTwo) {
+           let previousText = text.slice(0, indexOne)
+           let value = text.slice(indexOne + 2, indexTwo).trim()
+
+           if (value.indexOf(".") >= 0) {
+             value = eval(`observable.${value}`)
+             text = value + text.slice(indexTwo + 2, text.length)
+           } else {
+             text = observable[value] + text.slice(indexTwo + 2, text.length)
+           }
+           node.innerHTML = previousText + text
+
+               observe(value, () => {
+                 for (let variable in mustaches) {
+                   if (mustaches[variable] == node) {
+                      syncVM(node, observable, variable)
+                   }
+                 }
+               })
+         }
+         if (node.innerHTML.indexOf("{{") > 0) {
+           syncVM(node, observable)
+         }
+       }
+     }
+   }
+
+   function parseDOM (node, observable, customs) {
      // парс DOM, ищем все атрибуты в node
      let asHtml = document.querySelectorAll(`${node} [d-html]`);
      let once = document.querySelectorAll(`${node} [d-once]`);
@@ -482,21 +644,31 @@ const Dome = function(els = "", data = "", template = ``) {
      let touchend = document.querySelectorAll(`${node} [d-touchend]`);
      let touchmove = document.querySelectorAll(`${node} [d-touchmove]`);
      let dFor = document.querySelectorAll(`${node} [d-for]`);
-
+     let selfRendering = document.querySelectorAll(`${node} [self]`);
+     let styles = document.querySelectorAll(`${node} [d-style]`);
+     let inpt = document.querySelectorAll(`${node} [d-input]`);
+     let bind = document.querySelectorAll(`${node} [d-bind]`);
+     let vm = document.querySelectorAll(`${node} :not(input, button)`);
      // для кадого найденного элемента с атрибутом x вызываем функцию,
      // связанную c этим x атрибутом
+     vm.forEach((item) => {
+       syncVM(item, observable)
+     });
+
+     inpt.forEach((item) => {
+       syncInpt(item, observable, item.attributes['d-input'].value)
+     });
+     bind.forEach((item) => {
+       syncBind(item, observable, item.attributes['d-bind'].value, customs)
+     });
+     selfRendering.forEach((item) => {
+       selfRender(item, observable, item.attributes['self'].value)
+     });
      ifs.forEach((item) => {
        ifNode(item, observable, item.attributes['d-if'].value)
      });
      classes.forEach((bind) => {
        syncClass(bind, observable, bind.attributes['d-class'].value)
-     });
-     nodes.forEach((node) => {
-       if (node.hasAttribute("value")) {
-         syncValue(node, observable, node.attributes['d-text'].value)
-       } else {
-         syncNode(node, observable, node.attributes['d-text'].value)
-       }
      });
      once.forEach((one) => {
          syncOnce(one, observable, one.attributes['d-once'].value)
@@ -552,13 +724,160 @@ const Dome = function(els = "", data = "", template = ``) {
      dFor.forEach((item) => {
        syncFor(item, observable, item.attributes['d-for'].value)
      });
-
+    // nodes = document.querySelectorAll(`${node} [d-text]`);
+     nodes.forEach((node) => {
+       if (node.hasAttribute("value")) {
+         syncValue(node, observable, node.attributes['d-text'].value)
+       } else {
+         syncNode(node, observable, node.attributes['d-text'].value)
+       }
+     });
    }
 
+   function isBoolean(n) {
+     return typeof n === 'boolean';
+   }
+   function observe (property, signalHandler) {
+     if(!signals[property]) signals[property] = []
+     // Если для данного свойства нет сигнала,
+     // мы создаем его и помещаем туда массив
+     // для хранения обработчиков
+
+     signals[property].push(signalHandler)
+     if (signals[property].length > 10) {
+       signals[property].splice(4, signals[property].length)
+     }
+     // Помещаем обработчик signalHandler
+     // в массив сигналов, который фактически
+     // является массивом функций обратного вызова
+   }
+   function notify (signal) {
+     if(!signals[signal] || signals[signal].length < 1) return
+     // Выходим из функции, если нет
+     // соответствующих обработчиков сигнала
+     signals[signal].forEach((signalHandler) => signalHandler())
+     // Мы вызываем все обработчики, которые
+     // следят за данным свойством
+   }
+   function makeReactive (obj, key, nodes) {
+     let val = obj[key];
+
+     // реактивность, устанавливаем геттеры и сеттеры
+     Object.defineProperty(obj, key, {
+       get () {
+         return val
+       },
+       set (newVal) {
+         val = newVal
+         notify(key) // добавляем обработчик
+         if (isBoolean(val)) {
+           for (let el of nodes) {
+             parseDOM(el, obj) // если значение булевое - парсим DOM
+           }
+         }
+       }
+     })
+   }
+   function makeComputed(obj, key) {
+     let val = obj[key]
+
+     for (let variable in val) {
+       Object.defineProperty(obj, variable, {
+         get () {
+           observe(variable, () => {
+             val[variable].call(obj)
+           })
+           return val[variable].call(obj)
+         },
+         set () {
+           observe(variable, () => {
+             val[variable].call(obj)
+           })
+         }
+       })
+     }
+   }
+   function makeWatch(watchers, context) {
+    for (let key in watchers) {
+      if (watchers.hasOwnProperty(key)) {
+        observe(key, watchers[key].bind(context))
+      }
+    }
+}
+   function observeData (obj, nodes, customs) {
+
+       for (let key in obj) {
+         if (obj.hasOwnProperty(key)) {
+           if (key == "computed") {
+             makeComputed(obj, key)
+           } else if (key == "watch") {
+           makeWatch(obj[key], obj)
+           } else {
+           makeReactive(obj, key, nodes)
+           }
+            // каждому свойству data добавляем реактивность
+         }
+       }
+
+      for (let el of nodes) {
+        parseDOM(el, obj, customs) // и парсим DOM в первый раз, отрисовывая
+                          // все реактивные свойства
+      }
+    }
    let updateText = (property, e) => {
-      this.data[property] = e.value;
+     if (property.indexOf(".") >= 0) {
+       eval(`this.data.${property} = e.value;`)
+     } else {
+       this.data[property] = e.value;
+     }
    }
-   // функция для обновления текста
+
+   function syncLocalValue(node, observable, property) {
+    node.value = observable[property]
+    node.addEventListener("input", () => {
+      observable[property] = node.value
+    })
+   }
+
+   function observeLocalData (obj, nodes) {
+
+      for (let key in obj) {
+        if (obj.hasOwnProperty(key)) {
+           makeReactive(obj, key, nodes)
+           // каждому свойству data добавляем реактивность
+        }
+      }
+
+       parseLocalDOM(nodes, obj)
+   }
+
+   let parseLocalDOM = (node) => {
+     let observable = this.customs[node]
+
+     let asHtml = document.querySelectorAll(`${node} [s-html]`);
+     let once = document.querySelectorAll(`${node} [s-once]`);
+     let nodes = document.querySelectorAll(`${node} [s-text]`);
+     let classes = document.querySelectorAll(`${node} [s-class]`);
+     let clicks = document.querySelectorAll(`${node} [s-click]`);
+     let dFor = document.querySelectorAll(`${node} [s-for]`);
+     let ifNodes = document.querySelectorAll(`${node} [s-if]`);
+
+     nodes.forEach((node) => {
+       if (node.hasAttribute("value")) {
+         syncLocalValue(node, observable, node.attributes['s-text'].value)
+       } else {
+         syncNode(node, observable, node.attributes['s-text'].value)
+       }
+     });
+     ifNodes.forEach((item) => {
+       ifNode(item, observable, item.attributes['s-if'].value)
+     });
+     clicks.forEach((item) => {
+       syncLocalValue(item, observable, item.attributes['s-click'].value)
+     });
+
+   }
+
 
    if (this.data.reactive) {
      this.data.reactive()
@@ -568,26 +887,47 @@ const Dome = function(els = "", data = "", template = ``) {
    this.custom = function (name, datas) {
      let template = datas.template;
      let customData = Object.assign({}, data, datas);
-     this.customs.push(name);
-
-     class a extends HTMLElement {
-       constructor() {
-         super()
-            this.data = customData
-            this.data.$elName = name
-            this.data.$el = document.querySelector(name)
-       }
-       connectedCallback() {
-        // let allData = this.getAttribute('data')
-         this.innerHTML = template
+     // создаём временные переменные для удобства
+     this.props = Object.assign({}, this.props, datas);
+     // обновляем props
+     for (let variable in this.props) {
+       if (variable != "template") {
+         if (variable == "methods") {
+           this.data.$methods = this.props[variable]
+         } else {
+           this.data[variable] = this.props[variable]
+           makeReactive(this.data, variable, [])
+         }
        }
      }
-     customElements.define(name, a);
+     // перебираем каждое значение props, добавляем его в data и делаем реактивным
+     this.customs[name] = customData
+
+     class customConstructor extends HTMLElement {
+       constructor() {
+         super()
+         this.node = name
+         this.data = new Proxy(customData, validator)
+         this.data.$elName = name
+         this.data.$el = document.querySelector(name)
+       }
+       connectedCallback() {
+         this.innerHTML = template
+         for (var variable of this.attributes) {
+           this.data[variable.name] = variable.value
+         }
+         observeLocalData(this.data, this.node)
+         parseLocalDOM(name, this.data)
+       }
+     }
+     customElements.define(name, customConstructor);
+     // создаём customElement
      parseDOM(name, this.data)
      // парс DOM для элемента
      if (datas.defined) {
        datas.defined()
      }
+     // хук defined
    }
 
    if (this.data.mounted) {
@@ -597,11 +937,12 @@ const Dome = function(els = "", data = "", template = ``) {
 
    (() => {
      let elem = this.find(els)
-     if (elem.hasAttribute("d-cloak")) {
-       elem.removeAttribute("d-cloak")
+     if (elem) {
+       if (elem.hasAttribute("d-cloak")) {
+         elem.removeAttribute("d-cloak")
+       }
      }
    })();
    // самовызывабщаяся функция для убирания d-cloak
 };
-
 // Конец самой библиотеки
