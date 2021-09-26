@@ -21,11 +21,11 @@ const Dome = function(els = "", data = "") {
   }
   // хук beforeCreated
 
-  const isArray = Array.isArray;
+    const isArray = Array.isArray;
   const assign = Object.assign;
   const defineProperty = Object.defineProperty;
-  const isObject = (prop) => {
-    return typeof prop == "object" && prop !== null
+  const isObject = (val) => {
+    return typeof val == "object" && val !== null
   };
   const objectToString = Object.prototype.toString;
   const toTypeString = (value) => objectToString.call(value);
@@ -35,29 +35,29 @@ const Dome = function(els = "", data = "") {
   const isFunction = (val) => typeof val === 'function';
   const isString = (val) => typeof val === 'string';
   const isSymbol = (val) => typeof val === 'symbol';
-  const has = (node, attr) => {
-    return node.hasAttribute(attr)
+  const has = (node, val) => {
+    return node.hasAttribute(val)
   };
-  const index = (prop, str) => {
-    return prop.indexOf(str) != -1
+  const index = (val, str) => {
+    return val.indexOf(str) != -1
   };
-  const indexOf = (prop, str) => {
-    return prop.indexOf(str)
+  const indexOf = (val, str) => {
+    return val.indexOf(str)
   };
-  const startsWith$ = (prop) => {
-    return prop.startsWith("$")
+  const startsWith$ = (val) => {
+    return val.startsWith("$")
   };
-  const isBoolean = (prop) => {
-   let isTrue = prop == true ? true : false;
-   let isFalse = prop == false ? true : false;
+  const isBoolean = (val) => {
+   let isTrue = val == true ? true : false;
+   let isFalse = val == false ? true : false;
    let isBoolean = isFalse || isTrue;
-       return typeof prop === 'boolean' || isBoolean;
+       return typeof val === 'boolean' || isBoolean;
   };
-  const qs = (nodeName) => {
-    return document.querySelector(nodeName)
+  const qs = (val) => {
+    return document.querySelector(val)
   };
-  const qsa = (nodeName) => {
-    return document.querySelectorAll(nodeName)
+  const qsa = (val) => {
+    return document.querySelectorAll(val)
   };
   const toNumber = (val) => {
       const n = parseFloat(val);
