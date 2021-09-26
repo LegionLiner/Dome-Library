@@ -1,26 +1,68 @@
 {
 try {
-  let styles2 = document.createElement("link");
-    styles2.setAttribute("rel", "stylesheet");
-    styles2.setAttribute("href", "library.css");
-    document.head.append(styles2);
+  let styles = document.createElement("link");
+  styles.setAttribute("rel", "stylesheet");
+  styles.setAttribute("href", "library.css");
+  document.head.append(styles);
+
 } catch (e) {
-  console.log(e);
 }
 }
 // предустановка стилей
-
+let signals = {}
+let mustaches = {}
+let fors = new Map();
+let customs = new Map();
 // Начало самой библиотеки
-const Dome = function(els = "", data = "", template = ``) {
+
+const Dome = function(els = "", data = "") {
   if (data.beforeCreated) {
     data.beforeCreated()
   }
   // хук beforeCreated
 
-  let signals = {}
-  let mustaches = {}
-  let fors = new Map();
-  let customs = new Map();
+  const isArray = Array.isArray;
+  const assign = Object.assign;
+  const defineProperty = Object.defineProperty;
+  const isObject = (prop) => {
+    return typeof prop == "object" && prop !== null
+  };
+  const objectToString = Object.prototype.toString;
+  const toTypeString = (value) => objectToString.call(value);
+  const isMap = (val) => toTypeString(val) === '[object Map]';
+  const isSet = (val) => toTypeString(val) === '[object Set]';
+  const isDate = (val) => val instanceof Date;
+  const isFunction = (val) => typeof val === 'function';
+  const isString = (val) => typeof val === 'string';
+  const isSymbol = (val) => typeof val === 'symbol';
+  const has = (node, attr) => {
+    return node.hasAttribute(attr)
+  };
+  const index = (prop, str) => {
+    return prop.indexOf(str) != -1
+  };
+  const indexOf = (prop, str) => {
+    return prop.indexOf(str)
+  };
+  const startsWith$ = (prop) => {
+    return prop.startsWith("$")
+  };
+  const isBoolean = (prop) => {
+   let isTrue = prop == true ? true : false;
+   let isFalse = prop == false ? true : false;
+   let isBoolean = isFalse || isTrue;
+       return typeof prop === 'boolean' || isBoolean;
+  };
+  const qs = (nodeName) => {
+    return document.querySelector(nodeName)
+  };
+  const qsa = (nodeName) => {
+    return document.querySelectorAll(nodeName)
+  };
+  const toNumber = (val) => {
+      const n = parseFloat(val);
+      return isNaN(n) ? val : n;
+  };
 
   const month = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
   const week = ["Воскресенье", "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"]
@@ -31,39 +73,38 @@ const Dome = function(els = "", data = "", template = ``) {
   function makeProxy(datas) {
     let validator = {
       get(target, key) {
-        if (typeof target[key] == "object" && target[key] !== null) {
+        if (isObject(target[key])) {
           return new Proxy(target[key], validator)
         } else {
           return target[key]
         }
       },
       set(target, key, value) {
-        let isTrue = value == true ? true : false;
-        let isFalse = value == false ? true : false;
-        let isBoolean = isFalse || isTrue;
-        if (datas.watch[key]) {
-          if (typeof +value != "number" || isBoolean) {
-            datas.watch[key].call(datas, target[key], value)
-          } else {
-            datas.watch[key].call(datas, target[key], +value)
+        let isPropBoolean = isBoolean(value)
+        if (datas.watch) {
+          if (datas.watch[key]) {
+            if (typeof +value != "number" || isPropBoolean) {
+              datas.watch[key].call(datas, target[key], value)
+            } else {
+              datas.watch[key].call(datas, target[key], +value)
+            }
           }
         }
         target[key] = value;
         return true
       }
     }
-  //  console.log(datas);
     return new Proxy(datas, validator);
   }
   this.props = {}
-  this.data = Object.assign({}, data, this.props)
+  this.data = assign({}, data, this.props)
   this.data = makeProxy(this.data);
   // перезаписываем data, делая его прокси обьектом
 
   for (let item in this.data) {
     if (item == "methods") {
       for (let items in this.data.methods) {
-     Object.defineProperty(this, items, {
+     defineProperty(this, items, {
        get() {
          return this.data.methods[items]
        },
@@ -74,7 +115,7 @@ const Dome = function(els = "", data = "", template = ``) {
      })
      }
    } else if (item != "computed") {
-     Object.defineProperty(this, item, {
+     defineProperty(this, item, {
          get() {
            return this.data[item]
          },
@@ -212,57 +253,22 @@ const Dome = function(els = "", data = "", template = ``) {
     this.props = null;
   }
   // удаление приложения
-  if (template != "") {
-     this.temp = template;
-     // разметка
-     this.draw = (el) => {
-       let node = document.querySelector(el)
-         node.innerHTML = this.temp
-         this.nodes.push(el)
-         observeData(data, this.nodes)
-         return this;
-     }
-     // функция отрисовки (внешняя)
-     this._anonimDraw = (el) => {
-       let node = document.querySelector(el)
-         node.innerHTML = this.temp
-         observeData(data, this.nodes)
-     }
-     this._anonimDraw(els)
-     // внутренняя отрисовка
-     this.erase = (el) => {
-       let node = document.querySelector(el)
-       node.innerHTML = ""
-       return this;
-     }
-     // отчистить элемент
-     Object.defineProperty(this, 'template', {
-       get() {
-         return this.temp;
-         // геттер вернёт разметку
-       },
 
-       set(value) {
-         this.temp = value; // сеттер поставит разметку
-         for (let el of this.nodes) {
-           this._anonimDraw(el) // и анонимной функцией отрисует
-         }
-       }
-     })}
-  // разметка
   if (this.data.created) {
     this.data.created()
   }
   // хук created
 
   // начало реактивности
+   mixin(this.data.mixins, this.data, this)
    observeData(this.data, this.nodes, this)
+//index(property, ".")
 
    function syncNode (node, observable, property) {
-     if (node.hasAttribute("d-for")) {
+     if (has(node, "d-for")) {
        return
      }
-     if (property.indexOf(".") >= 0) {
+     if (index(property, ".")) {
        let prop = eval(`observable.${property}`)
        node.textContent = prop
      } else {
@@ -272,7 +278,7 @@ const Dome = function(els = "", data = "", template = ``) {
      // синхронизируем текст у node и уведомляем обработчик
    }
    function syncAsHtml(node, observable, property) {
-     if (property.indexOf(".") >= 0) {
+     if (index(property, ".")) {
        let prop = eval(`observable.${property}`)
        node.innerHTML = prop
      } else {
@@ -292,8 +298,10 @@ const Dome = function(els = "", data = "", template = ``) {
        // если ложно - скрываем элемент и проверяем,
        // есть ли сосед с атрибутом d-else
        if (ifEl.nextElementSibling) {
-         if (ifEl.nextElementSibling.hasAttribute("d-else")) {
-             ifEl.nextElementSibling.style.display = "";
+         if (has(ifEl.nextElementSibling, "d-else-if")) {
+           ifNode(ifEl.nextElementSibling, data, ifEl.nextElementSibling.attributes["d-else-if"].value)
+         } else if (has(ifEl.nextElementSibling, "d-else")) {
+           ifEl.nextElementSibling.style.display = "";
          }
        }
      } else {
@@ -301,9 +309,10 @@ const Dome = function(els = "", data = "", template = ``) {
        // если такой есть - скрываем его
          ifEl.style.display = "";
        if (ifEl.nextElementSibling) {
-         if (ifEl.nextElementSibling.hasAttribute("d-else")) {
+         if (has(ifEl.nextElementSibling, "d-else-if")) {
+           ifNode(ifEl.nextElementSibling, data, ifEl.nextElementSibling.attributes["d-else-if"].value)
+         } else if (has(ifEl.nextElementSibling, "d-else")) {
            ifEl.nextElementSibling.style.display = "none";
-           ifEl.nextElementSibling.removeAttribute("d-once")
          }
        }
      }
@@ -318,7 +327,7 @@ const Dome = function(els = "", data = "", template = ``) {
      });
    }
    function syncValue(node, observable, property) {
-     if (property.indexOf(".") >= 0) {
+     if (index(property, ".")) {
        let prop = eval(`observable.${property}`)
        node.value = prop
      } else {
@@ -440,7 +449,7 @@ const Dome = function(els = "", data = "", template = ``) {
 
    // внизу куча EventListener на свой атрибут
    function syncClicks(clickEL, data, proprety) {
-    if (proprety.startsWith("$")) {
+    if (startsWith$(proprety)) {
       let event = proprety.slice(1, proprety.length)
       clickEL.addEventListener("click", data.$methods[event])
       return
@@ -449,7 +458,7 @@ const Dome = function(els = "", data = "", template = ``) {
     clickEL.removeAttribute("d-click")
    }
    function syncDblclick(clickEL, data, proprety) {
-     if (proprety.startsWith("$")) {
+     if (startsWith$(proprety)) {
        let event = proprety.slice(1, proprety.length)
        clickEL.addEventListener("dblclick", data.$methods[event])
        return
@@ -457,7 +466,7 @@ const Dome = function(els = "", data = "", template = ``) {
      clickEL.addEventListener("dblclick", data.methods[proprety])
    }
    function syncMousedown(clickEL, data, proprety) {
-     if (proprety.startsWith("$")) {
+     if (startsWith$(proprety)) {
        let event = proprety.slice(1, proprety.length)
        clickEL.addEventListener("mousedown", data.$methods[event])
        return
@@ -465,7 +474,7 @@ const Dome = function(els = "", data = "", template = ``) {
      clickEL.addEventListener("mousedown", data.methods[proprety])
    }
    function syncMouseup(clickEL, data, proprety) {
-     if (proprety.startsWith("$")) {
+     if (startsWith$(proprety)) {
        let event = proprety.slice(1, proprety.length)
        clickEL.addEventListener("mouseup", data.$methods[event])
        return
@@ -473,7 +482,7 @@ const Dome = function(els = "", data = "", template = ``) {
      clickEL.addEventListener("mouseup", data.methods[proprety])
    }
    function syncSelect(clickEL, data, proprety) {
-     if (proprety.startsWith("$")) {
+     if (startsWith$(proprety)) {
        let event = proprety.slice(1, proprety.length)
        clickEL.addEventListener("select", data.$methods[event])
        return
@@ -481,7 +490,7 @@ const Dome = function(els = "", data = "", template = ``) {
      clickEL.addEventListener("select", data.methods[proprety])
    }
    function syncMouseenter(clickEL, data, proprety) {
-     if (proprety.startsWith("$")) {
+     if (startsWith$(proprety)) {
        let event = proprety.slice(1, proprety.length)
        clickEL.addEventListener("mouseenter", data.$methods[event])
        return
@@ -489,7 +498,7 @@ const Dome = function(els = "", data = "", template = ``) {
      clickEL.addEventListener("mouseenter", data.methods[proprety])
    }
    function syncmMuseleave(clickEL, data, proprety) {
-     if (proprety.startsWith("$")) {
+     if (startsWith$(proprety)) {
        let event = proprety.slice(1, proprety.length)
        clickEL.addEventListener("mouseleave", data.$methods[event])
        return
@@ -497,7 +506,7 @@ const Dome = function(els = "", data = "", template = ``) {
      clickEL.addEventListener("mouseleave", data.methods[proprety])
    }
    function syncMousemove(clickEL, data, proprety) {
-     if (proprety.startsWith("$")) {
+     if (startsWith$(proprety)) {
        let event = proprety.slice(1, proprety.length)
        clickEL.addEventListener("mousemove", data.$methods[event])
        return
@@ -505,7 +514,7 @@ const Dome = function(els = "", data = "", template = ``) {
      clickEL.addEventListener("mousemove", data.methods[proprety])
    }
    function syncMouseover(clickEL, data, proprety) {
-     if (proprety.startsWith("$")) {
+     if (startsWith$(proprety)) {
        let event = proprety.slice(1, proprety.length)
        clickEL.addEventListener("mouseover", data.$methods[event])
        return
@@ -513,7 +522,7 @@ const Dome = function(els = "", data = "", template = ``) {
      clickEL.addEventListener("mouseover", data.methods[proprety])
    }
    function syncDrag(clickEL, data, proprety) {
-     if (proprety.startsWith("$")) {
+     if (startsWith$(proprety)) {
        let event = proprety.slice(1, proprety.length)
        clickEL.addEventListener("drag", data.$methods[event])
        return
@@ -521,7 +530,7 @@ const Dome = function(els = "", data = "", template = ``) {
      clickEL.addEventListener("drag", data.methods[proprety])
    }
    function syncDrop(clickEL, data, proprety) {
-     if (proprety.startsWith("$")) {
+     if (startsWith$(proprety)) {
        let event = proprety.slice(1, proprety.length)
        clickEL.addEventListener("drop", data.$methods[event])
        return
@@ -529,7 +538,7 @@ const Dome = function(els = "", data = "", template = ``) {
      clickEL.addEventListener("drop", data.methods[proprety])
    }
    function syncTouchcancel(clickEL, data, proprety) {
-     if (proprety.startsWith("$")) {
+     if (startsWith$(proprety)) {
        let event = proprety.slice(1, proprety.length)
        clickEL.addEventListener("touchcancel", data.$methods[event])
        return
@@ -537,7 +546,7 @@ const Dome = function(els = "", data = "", template = ``) {
      clickEL.addEventListener("touchcancel", data.methods[proprety])
    }
    function syncTouchstart(clickEL, data, proprety) {
-     if (proprety.startsWith("$")) {
+     if (startsWith$(proprety)) {
        let event = proprety.slice(1, proprety.length)
        clickEL.addEventListener("touchstart", data.$methods[event])
        return
@@ -545,7 +554,7 @@ const Dome = function(els = "", data = "", template = ``) {
      clickEL.addEventListener("touchstart", data.methods[proprety])
    }
    function syncTouchend(clickEL, data, proprety) {
-     if (proprety.startsWith("$")) {
+     if (startsWith$(proprety)) {
        let event = proprety.slice(1, proprety.length)
        clickEL.addEventListener("touchend", data.$methods[event])
        return
@@ -553,7 +562,7 @@ const Dome = function(els = "", data = "", template = ``) {
      clickEL.addEventListener("touchend", data.methods[proprety])
    }
    function syncTouchmove(clickEL, data, proprety) {
-     if (proprety.startsWith("$")) {
+     if (startsWith$(proprety)) {
        let event = proprety.slice(1, proprety.length)
        clickEL.addEventListener("touchmove", data.$methods[event])
        return
@@ -572,7 +581,7 @@ const Dome = function(els = "", data = "", template = ``) {
      }
    }
    function syncInpt(node, observable, property) {
-     if (property.startsWith("$")) {
+     if (startsWith$(proprety)) {
        let event = property.slice(1, property.length)
        node.addEventListener("input", observable.$methods[event])
        return
@@ -580,13 +589,15 @@ const Dome = function(els = "", data = "", template = ``) {
      node.addEventListener("input", observable.methods[property])
    }
    function syncBind(node, observable, property) {
-     let prop = property.slice(0, property.indexOf(":"))
-         let gap = property.indexOf(", ")
+     let prop = property.slice(0, indexOf(property, ":"))
+         let gap = indexOf(property, ", ")
          if (gap != -1) {
-           let lol = property.slice(property.indexOf(":") + 2, gap)
+           let lol = property.slice(indexOf(property, ":") + 2, gap)
            props = eval(`observable.${prop}`)
-           node.setAttribute(lol, props)
-           observe(prop, () => node.setAttribute(lol, props))
+           if (props) {
+             node.setAttribute(lol, props)
+             observe(prop, () => node.setAttribute(lol, props))
+           }
            property = property.slice(gap + 2, property.length)
            syncBind(node, observable, property)
          } else {
@@ -601,34 +612,32 @@ const Dome = function(els = "", data = "", template = ``) {
    }
    // для массива из точенной нотации
    function nesting(value, observable, set) {
-     let start = value.indexOf("this.")
+     let start = indexOf(value, ".this")
      let slice = value.slice(start + 5, value.length)
      let gap = slice.indexOf(" ")
      let end = slice.slice(0, gap)
-     end.indexOf("\n") != -1 ? end = end.slice(0, gap - 1) : false
-     end.indexOf("}") != -1 ? end = end.slice(0, end.indexOf("}")) : false
+     index(end, "\n") ? end = end.slice(0, gap - 1) : false
+     index(end, "}") ? end = end.slice(0, indexOf(end, "}")) : false
      set.add(end)
-     if (slice.indexOf("this.") !== -1) {
+     if (index(slice, "this.")) {
        nesting(slice, observable, set)
      }
    }
 // IDEA: СДЕЛАТЬ МУСТАЧЕСЫ МАПОМ ЧТОБЫ КЛЮЧИ В ВИДЕ {{ИМЯ}} НЕ ПУТАЛИСЬ И ЦИКЛ ВЫВОДИЛСЯ НОРМАЛЬНО
    function syncVM(node, observable, inner) {
-     if (node.hasAttribute("d-for")) {
+     if (has(node, "d-for")) {
        return
      }
-     let text = node.innerHTML;
-     if (inner) {
-       text = inner
-     }
-     let indexOne = text.indexOf("{{")
-     let indexTwo = text.indexOf("}}")
+     let text;
+     inner ? text = inner : text = node.innerHTML;
+     let indexOne = indexOf(text, "{{")
+     let indexTwo = indexOf(text, "}}")
      if (indexOne != -1) {
        if (indexOne == 0) {
          if (indexTwo) {
              let value = text.slice(indexOne + 2, indexTwo).trim()
 
-             if (value.indexOf(".") >= 0) {
+             if (index(value, ".")) {
                var prop = eval(`observable.${value}`)
                mustaches[text] = node
                text = prop + text.slice(indexTwo + 2, text.length)
@@ -647,7 +656,7 @@ const Dome = function(els = "", data = "", template = ``) {
                })
            }
          }
-         if (node.innerHTML.indexOf("{{") > 0) {
+         if (indexOf(node.innerHTML, "{{") > 0) {
            syncVM(node, observable)
          }
        } else {
@@ -655,7 +664,7 @@ const Dome = function(els = "", data = "", template = ``) {
            let previousText = text.slice(0, indexOne)
            let value = text.slice(indexOne + 2, indexTwo).trim()
 
-           if (value.indexOf(".") >= 0) {
+           if (index(value, ".")) {
              value = eval(`observable.${value}`)
              text = value + text.slice(indexTwo + 2, text.length)
            } else {
@@ -673,7 +682,7 @@ const Dome = function(els = "", data = "", template = ``) {
              })
          }
          }
-         if (node.innerHTML.indexOf("{{") > 0) {
+         if (indexOf(node.innerHTML, "{{") > 0) {
            syncVM(node, observable)
          }
        }
@@ -682,35 +691,35 @@ const Dome = function(els = "", data = "", template = ``) {
 
    function parseEL(node, observable) {
      if (node.nodeName != "DIV") {
-       if (node.hasAttribute("d-bind")) {
+       if (has(node, "d-bind")) {
              syncBind(node, observable, node.attributes['d-bind'].value)
        }
-       if (node.hasAttribute("d-text")) {
-           if (node.hasAttribute("value")) {
+       if (has(node, "d-text")) {
+           if (has(node, "value")) {
              syncValue(node, observable, node.attributes['d-text'].value)
            } else {
              syncNode(node, observable, node.attributes['d-text'].value)
            }
        }
-       if (node.hasAttribute("d-once")) {
+       if (has(node, "d-once")) {
              syncOnce(node, observable, node.attributes['d-once'].value)
        }
-       if (node.hasAttribute("d-html")) {
+       if (has(node, "d-html")) {
              syncAsHtml(node, observable, node.attributes['d-html'].value)
        }
-       if (node.hasAttribute("d-class")) {
+       if (has(node, "d-class")) {
              syncClass(node, observable, node.attributes['d-class'].value)
        }
      } else {
        let random = "d-for-class"
        node.classList.add(random)
 
-       let asHtml = document.querySelectorAll(`.${random} [d-html]`);
-       let once = document.querySelectorAll(`.${random} [d-once]`);
-       let nodes = document.querySelectorAll(`.${random} [d-text]`);
-       let classes = document.querySelectorAll(`.${random} [d-class]`);
-       let ifs = document.querySelectorAll(`.${random} [d-if]`);
-       let bind = document.querySelectorAll(`.${random} [d-bind]`);
+       let asHtml = qsa(`.${random} [d-html]`);
+        once = qsa(`.${random} [d-once]`);
+        nodes = qsa(`.${random} [d-text]`);
+        classes = qsa(`.${random} [d-class]`);
+        ifs = qsa(`.${random} [d-if]`);
+        bind = qsa(`.${random} [d-bind]`);
 
        node.classList.remove(random)
 
@@ -737,12 +746,12 @@ const Dome = function(els = "", data = "", template = ``) {
            syncAsHtml(item, observable, item.attributes['d-html'].value)
          });
      }
-     if (node.innerHTML.indexOf("{{") > 0) {
+     if (index(node.innerHTML, "{{")) {
        syncVM(node, observable)
      }
        for (let variable in observable) {
          let val = observable[variable]
-         Object.defineProperty(observable, variable, {
+         defineProperty(observable, variable, {
            get () {
              return val
            },
@@ -759,37 +768,37 @@ const Dome = function(els = "", data = "", template = ``) {
    }
    function parseDOM (node, observable) {
      // парс DOM, ищем все атрибуты в node
-     let asHtml = document.querySelectorAll(`${node} [d-html]`);
-     let once = document.querySelectorAll(`${node} [d-once]`);
-     let nodes = document.querySelectorAll(`${node} [d-text]`);
-     let ifs = document.querySelectorAll(`${node} [d-if]`);
-     let clicks = document.querySelectorAll(`${node} [d-click]`);
-     let dblclick = document.querySelectorAll(`${node} [d-dblclick]`);
-     let mousedown = document.querySelectorAll(`${node} [d-mousedown]`);
-     let mouseup = document.querySelectorAll(`${node} [d-mouseup]`);
-     let select = document.querySelectorAll(`${node} [d-select]`);
-     let mouseenter = document.querySelectorAll(`${node} [d-mouseenter]`);
-     let mouseleave = document.querySelectorAll(`${node} [d-mouseleave]`);
-     let mousemove = document.querySelectorAll(`${node} [d-mousemove]`);
-     let mouseover = document.querySelectorAll(`${node} [d-mouseover]`);
-     let drag = document.querySelectorAll(`${node} [d-drag]`);
-     let drop = document.querySelectorAll(`${node} [d-drop]`);
-     let touchstart = document.querySelectorAll(`${node} [d-touchstart]`);
-     let touchcancel = document.querySelectorAll(`${node} [d-touchcancel]`);
-     let touchend = document.querySelectorAll(`${node} [d-touchend]`);
-     let touchmove = document.querySelectorAll(`${node} [d-touchmove]`);
-     let dFor = document.querySelectorAll(`${node} [d-for]`);
-     let selfRendering = document.querySelectorAll(`${node} [self]`);
-     let inpt = document.querySelectorAll(`${node} [d-input]`);
-     let bind = document.querySelectorAll(`${node} [d-bind]`);
-     let vm = document.querySelectorAll(`${node} :not(input, button)`);
+     let asHtml = qsa(`${node} [d-html]`);
+      once = qsa(`${node} [d-once]`);
+      nodes = qsa(`${node} [d-text]`);
+      ifs = qsa(`${node} [d-if]`);
+      clicks = qsa(`${node} [d-click]`);
+      dblclick = qsa(`${node} [d-dblclick]`);
+      mousedown = qsa(`${node} [d-mousedown]`);
+      mouseup = qsa(`${node} [d-mouseup]`);
+      select = qsa(`${node} [d-select]`);
+      mouseenter = qsa(`${node} [d-mouseenter]`);
+      mouseleave = qsa(`${node} [d-mouseleave]`);
+      mousemove = qsa(`${node} [d-mousemove]`);
+      mouseover = qsa(`${node} [d-mouseover]`);
+      drag = qsa(`${node} [d-drag]`);
+      drop = qsa(`${node} [d-drop]`);
+      touchstart = qsa(`${node} [d-touchstart]`);
+      touchcancel = qsa(`${node} [d-touchcancel]`);
+      touchend = qsa(`${node} [d-touchend]`);
+      touchmove = qsa(`${node} [d-touchmove]`);
+      dFor = qsa(`${node} [d-for]`);
+      selfRendering = qsa(`${node} [self]`);
+      inpt = qsa(`${node} [d-input]`);
+      bind = qsa(`${node} [d-bind]`);
+      vm = qsa(`${node} :not(input, button)`);
 
 
      // для кадого найденного элемента с атрибутом x вызываем функцию,
      // связанную c этим x атрибутом
 
      nodes.forEach((node) => {
-       if (node.hasAttribute("value")) {
+       if (has(node, "value")) {
          syncValue(node, observable, node.attributes['d-text'].value)
        } else {
          syncNode(node, observable, node.attributes['d-text'].value)
@@ -863,26 +872,25 @@ const Dome = function(els = "", data = "", template = ``) {
        syncFor(item, observable, item.attributes['d-for'].value)
      });
      vm.forEach((item) => {
-       if (item.textContent.indexOf("{{") != -1) {
+       if (index(item.textContent, "{{")) {
          syncVM(item, observable)
        }
      });
    }
-   let parseLocalDOM = (node) => {
-     let customEl = document.querySelector(`${node}`);
-     let observable = customs.get(customEl)
+   let parseLocalDOM = (node, observable) => {
+     let customEl = qs(`${node}`);
 
-     let asHtml = document.querySelectorAll(`${node} [s-html]`);
-     let once = document.querySelectorAll(`${node} [s-once]`);
-     let nodes = document.querySelectorAll(`${node} [s-text]`);
-     let classes = document.querySelectorAll(`${node} [s-class]`);
-     let clicks = document.querySelectorAll(`${node} [s-click]`);
-     let dFor = document.querySelectorAll(`${node} [s-for]`);
-     let ifNodes = document.querySelectorAll(`${node} [s-if]`);
-     let vm = document.querySelectorAll(`${node} :not(input, button)`);
+     let asHtml = qsa(`${node} [s-html]`);
+      once = qsa(`${node} [s-once]`);
+      nodes = qsa(`${node} [s-text]`);
+      classes = qsa(`${node} [s-class]`);
+      clicks = qsa(`${node} [s-click]`);
+      dFor = qsa(`${node} [s-for]`);
+      ifNodes = qsa(`${node} [s-if]`);
+      vm = qsa(`${node} :not(input, button)`);
 
      nodes.forEach((node) => {
-       if (node.hasAttribute("value")) {
+       if (has(node, "value")) {
          syncLocalValue(node, observable, node.attributes['s-text'].value)
        } else {
          syncNode(node, observable, node.attributes['s-text'].value)
@@ -895,16 +903,13 @@ const Dome = function(els = "", data = "", template = ``) {
        syncLocalClicks(item, observable, item.attributes['s-click'].value)
      });
      vm.forEach((item) => {
-       if (item.textContent.indexOf("{{") != -1) {
+       if (index(item.textContent, "{{")) {
          syncVM(item, observable)
        }
      });
 
    }
 
-   function isBoolean(n) {
-     return typeof n === 'boolean';
-   }
    function observe (property, signalHandler) {
      if(!signals[property]) signals[property] = []
      // Если для данного свойства нет сигнала,
@@ -933,7 +938,7 @@ const Dome = function(els = "", data = "", template = ``) {
    function makeReactive (obj, key, nodes) {
      let val = obj[key];
      // реактивность, устанавливаем геттеры и сеттеры
-     Object.defineProperty(obj, key, {
+     defineProperty(obj, key, {
        get () {
          return val
        },
@@ -952,7 +957,7 @@ const Dome = function(els = "", data = "", template = ``) {
      let set = new Set();
      // Set не пропустит повторяющиеся значения, выходящие из функции nesting
      for (let variable in val) {
-       Object.defineProperty(obj, variable, {
+       defineProperty(obj, variable, {
          get () {
            nesting(val[variable].toString(), obj, set)
            // из функции выбираем свойства, которые должны отслеживаться
@@ -969,7 +974,7 @@ const Dome = function(els = "", data = "", template = ``) {
          set () {
          }
        })
-       Object.defineProperty(customs, variable, {
+       defineProperty(customs, variable, {
          get () {
            return val[variable].call(obj)
          },
@@ -997,7 +1002,7 @@ const Dome = function(els = "", data = "", template = ``) {
       }
     }
    let updateText = (property, e) => {
-     if (property.indexOf(".") >= 0) {
+     if (index(property, ".")) {
        eval(`this.data.${property} = e.value;`)
      } else {
        this.data[property] = e.value;
@@ -1030,23 +1035,25 @@ const Dome = function(els = "", data = "", template = ``) {
        parseLocalDOM(nodes, obj)
    }
 
-
    if (this.data.reactive) {
      this.data.reactive()
    }
    // хук реактивности, реактивность готова
-
+   let customCount = 0;
    this.custom = function (name, datas) {
      let template = datas.template;
      let propsData = {};
      // создаём временные переменные для удобства
-     for (let prop of datas.props) {
-       propsData[prop] = data[prop]
+     if (datas.props) {
+       for (let prop of datas.props) {
+         propsData[prop] = data[prop]
+       }
      }
      // из всех props добавляем значение в данные компонента
-     let customData = Object.assign({}, propsData, datas);
+     let customData = assign({}, propsData, datas)
      customData.template = null;
-     this.props = Object.assign({}, this.props, datas);
+
+     this.props = assign({}, this.props, datas);
      // обновляем props
      for (let variable in this.props) {
        if (variable != "template") {
@@ -1063,11 +1070,15 @@ const Dome = function(els = "", data = "", template = ``) {
          this.node = name
          this.data = customData
          this.data.$elName = name
-         this.data.$el = document.querySelector(name)
+         this.data.$el = qs(name)
          this.data.$emit = data
+         mixin(this.data.mixins, this.data, this)
          this.data = makeProxy(customData)
        }
        connectedCallback() {
+         console.log(this);
+         this.data.$c = customCount;
+         customCount++;
          this.innerHTML = template
          for (var variable of this.attributes) {
            if (!variable.name.startsWith("d-")) {
@@ -1076,6 +1087,7 @@ const Dome = function(els = "", data = "", template = ``) {
          }
          customs.set(this, customData)
          observeLocalData(this.data, this.node, this)
+        // console.log(name, this.data);
          parseLocalDOM(name, this.data)
        }
      }
@@ -1088,6 +1100,82 @@ const Dome = function(els = "", data = "", template = ``) {
      }
      // хук defined
    }
+   // метод для компонентов
+   function mixin(obj, obj2, parent) {
+     if (isArray(obj)) {
+       for (let variable of obj) {
+         for (var el in variable) {
+           if (isString(variable[el])) {
+               obj2[el] = variable[el]
+           } else if (isFunction(variable[el])) {
+             obj2[el] = variable[el]
+             obj2[el].bind(obj2)
+           } else if (isObject(variable[el])) {
+             if (!obj2[el]) {
+               obj2[el] = variable[el]
+             }
+             mixin(variable[el], obj2[el], parent)
+           }
+         }
+       }
+     } else if (isObject(obj)) {
+         for (var el in obj) {
+           if (isString(obj[el])) {
+               obj2[el] = obj[el]
+           } else if (isFunction(obj[el])) {
+             obj2[el] = obj[el]
+             obj2[el].bind(obj2)
+           } else if (isObject(obj[el])) {
+             if (!obj2[el]) {
+               obj2[el] = obj[el]
+             }
+             mixin(variable[el], obj2[el], parent)
+           }
+         }
+     }
+
+     for (let item in obj) {
+       if (item == "methods") {
+         for (let items in obj.methods) {
+        defineProperty(parent, items, {
+          get() {
+            return obj.methods[items]
+          },
+
+          set(value) {
+            obj.methods[items] = value;
+          }
+        })
+        }
+      } else if (item != "computed") {
+          if (isObject(obj[item])) {
+            for (let objEl in obj[item]) {
+              if (objEl != "methods" && objEl != "computed") {
+                defineProperty(parent, objEl, {
+                    get() {
+                      return obj[item][objEl]
+                    },
+
+                    set(value) {
+                      obj[item][objEl] = value;
+                    }
+                  })
+              }
+            }
+          } else {
+            defineProperty(parent, item, {
+                get() {
+                  return obj[item]
+                },
+
+                set(value) {
+                  obj[item] = value;
+                }
+              })
+          }
+        }
+      }
+   }
 
    if (this.data.mounted) {
      this.data.mounted()
@@ -1097,7 +1185,7 @@ const Dome = function(els = "", data = "", template = ``) {
    setTimeout(() => {
      let elem = this.find(els)
      if (elem) {
-       if (elem.hasAttribute("d-cloak")) {
+       if (has(elem, "d-cloak")) {
          elem.removeAttribute("d-cloak")
        }
      }
@@ -1105,4 +1193,3 @@ const Dome = function(els = "", data = "", template = ``) {
    // самовызываящаяся функция для убирания d-cloak
 };
 // Конец самой библиотеки
-
