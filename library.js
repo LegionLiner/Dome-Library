@@ -1,13 +1,6 @@
-{
-try {
-  let styles = document.createElement("link");
-  styles.setAttribute("rel", "stylesheet");
-  styles.setAttribute("href", "library.css");
-  document.head.append(styles);
+const isProxy = Symbol("isProxy")
+const isObserved = Symbol("isObserved")
 
-} catch (e) {
-}
-}
 // Начало самой библиотеки
 const Dome = function(els = "", data = "") {
   if (data.beforeCreated) {
@@ -21,6 +14,7 @@ const Dome = function(els = "", data = "") {
   let customs = new Map();
   let custom = {};
   let forsMaps = new Map();
+  let observed = new Map();
 
   const isArray = Array.isArray;
   const assign = Object.assign;
@@ -74,6 +68,9 @@ const Dome = function(els = "", data = "") {
   function makeProxy(datas) {
     let validator = {
       get(target, key) {
+        if (key == isProxy) {
+          return true;
+        }
         if (isObject(target[key])) {
           return new Proxy(target[key], validator)
         } else {
@@ -325,11 +322,8 @@ const Dome = function(els = "", data = "") {
        })
      }
      // функция мпарсдум для иф элс элемента, удалить парс из геттеров и сеттеров
-  //   fors.forEach((item, node) => {
-    //   parseEL(node, item, data)
-    // });
    }
-   // IDEA: ВОЗМОЖНО, БЕСПОЛЕЗНЫЙ ЦИКЛ СВЕРХУ
+
    function syncValue(node, observable, property) {
      if (index(property, ".")) {
        let prop = eval(`observable.${property}`)
@@ -343,9 +337,9 @@ const Dome = function(els = "", data = "") {
     })
     // уведомляем обработчик
     node.removeAttribute("d-text")
+    node.removeAttribute("s-text")
    }
    function _anonimFor(node, observable, property, inner) {
-
      fors = new Map()
      let lol = property.slice(property.lastIndexOf(" ") + 1, property.length)
      let nodeName = node.nodeName.toLowerCase() // узнаем имя node
@@ -396,7 +390,7 @@ const Dome = function(els = "", data = "") {
      let specialIndexForSpecialClicks = 0
      fors.forEach((item, node) => {
        item.specialIndexForSpecialClicks = specialIndexForSpecialClicks++
-    //   parseEL(node, item, observable)
+       parseEL(node, item, observable)
      });
      specialIndexForSpecialClicks = 0;
      fors = timeFors;
@@ -410,13 +404,23 @@ const Dome = function(els = "", data = "") {
      let inner = node.innerHTML;
      let timeFors = fors;
      fors.clear()
-     observable[lol] = new Proxy(observable[lol], {
-       set(target, key, value) {
-         target[key] = value;
-         _anonimFor(node, observable, property, inner)
-         return true
-       }
-     })
+     if (!observable[lol][isObserved]) {
+       observable[lol] = new Proxy(observable[lol], {
+         get(target, key) {
+           if (key == isObserved) {
+             return true;
+           }
+           return target[key]
+         },
+         set(target, key, value) {
+           target[key] = value;
+           if (key == "length") {
+             _anonimFor(node, observable, property, inner)
+           }
+           return true
+         }
+       })
+     }
      // узнаем значение, которое требуется искать в data
      node.innerHTML = "";
      if (nodeName == "ul" || nodeName == "ol") {
@@ -460,6 +464,7 @@ const Dome = function(els = "", data = "") {
      let specialIndexForSpecialClicks = 0
      fors.forEach((item, node) => {
        item.specialIndexForSpecialClicks = specialIndexForSpecialClicks++
+       item.constIndex = `node-${specialIndexForSpecialClicks}`
        parseEL(node, item, observable)
      });
      specialIndexForSpecialClicks = 0
@@ -471,7 +476,7 @@ const Dome = function(els = "", data = "") {
    function syncClicks(clickEL, data, proprety, dForData) {
      if (dForData) {
        clickEL.addEventListener("click", () => {
-         dForData.methods[proprety].call(dForData, data.specialIndexForSpecialClicks)
+         dForData.methods[proprety].call(dForData, data.specialIndexForSpecialClicks, data)
        })
      } else {
        if (startsWith$(proprety)) {
@@ -641,7 +646,7 @@ const Dome = function(els = "", data = "") {
    }
    // для массива из точенной нотации
    function nesting(value, observable, set) {
-     let start = indexOf(value, ".this")
+     let start = indexOf(value, "this.")
      let slice = value.slice(start + 5, value.length)
      let gap = slice.indexOf(" ")
      let end = slice.slice(0, gap)
@@ -790,8 +795,9 @@ const Dome = function(els = "", data = "") {
          item.removeAttribute("d-click")
        });
      }
+     if (!observed.has(observable.constIndex)) {
+       observed.set(observable.constIndex, node)
        for (let variable in observable) {
-         if (variable == "specialIndexForSpecialClicks") {
            let val = observable[variable]
            defineProperty(observable, variable, {
              get () {
@@ -800,20 +806,21 @@ const Dome = function(els = "", data = "") {
              set (newVal) {
                val = newVal
                notify(variable)
-               fors.forEach((observable, node) => {
-                 parseEL(node, observable, data)
-               });
                 // добавляем обработчик
              }
            })
-         }
        }
+     }
    }
    function parseDOM (node, observable) {
      // парс DOM, ищем все атрибуты в node
      let bind = qsa(`${node} [d-bind]`);
      bind.forEach((item) => {
        syncBind(item, observable, item.attributes['d-bind'].value)
+     });
+     let dFor = qsa(`${node} [d-for]`);
+     dFor.forEach((item) => {
+       syncFor(item, observable, item.attributes['d-for'].value)
      });
 
      let asHtml = qsa(`${node} [d-html]`);
@@ -834,7 +841,6 @@ const Dome = function(els = "", data = "") {
       touchcancel = qsa(`${node} [d-touchcancel]`);
       touchend = qsa(`${node} [d-touchend]`);
       touchmove = qsa(`${node} [d-touchmove]`);
-      dFor = qsa(`${node} [d-for]`);
       selfRendering = qsa(`${node} [self]`);
       inpt = qsa(`${node} [d-input]`);
       vm = qsa(`${node} :not(input, button)`);
@@ -844,9 +850,6 @@ const Dome = function(els = "", data = "") {
      // для кадого найденного элемента с атрибутом x вызываем функцию,
      // связанную c этим x атрибутом
 
-     dFor.forEach((item) => {
-       syncFor(item, observable, item.attributes['d-for'].value)
-     });
      nodes.forEach((node) => {
        if (has(node, "value")) {
          syncValue(node, observable, node.attributes['d-text'].value)
@@ -1244,4 +1247,5 @@ const Dome = function(els = "", data = "") {
    // самовызываящаяся функция для убирания d-cloak
 };
 // Конец самой библиотеки
+
 
