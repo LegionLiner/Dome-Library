@@ -1,3 +1,4 @@
+
 const isProxy = Symbol("isProxy")
 const isObserved = Symbol("isObserved")
 
@@ -16,6 +17,11 @@ const Dome = function(els = "", data = "") {
   let forsMaps = new Map();
   let observed = new Map();
 
+  const descriptor = {
+    enumerable: false,
+    writable: false,
+    configurable: false
+  }
   const isArray = Array.isArray;
   const assign = Object.assign;
   const defineProperty = Object.defineProperty;
@@ -64,7 +70,7 @@ const Dome = function(els = "", data = "") {
   // нужные константы.
 
   this.nodes = [els]
-
+  defineProperty(this, "nodes", descriptor);
   function makeProxy(datas) {
     let validator = {
       get(target, key) {
@@ -72,7 +78,12 @@ const Dome = function(els = "", data = "") {
           return true;
         }
         if (isObject(target[key])) {
-          return new Proxy(target[key], validator)
+          if (!target[key][isProxy]) {
+            target[key] = new Proxy(target[key], validator)
+            return target[key]
+          } else {
+            return target[key]
+          }
         } else {
           return target[key]
         }
@@ -89,14 +100,15 @@ const Dome = function(els = "", data = "") {
           }
         }
         target[key] = value;
+        notify(key)
         return true
       }
     }
     return new Proxy(datas, validator);
   }
   this.props = {}
-  this.data = assign({}, data, this.props)
-  this.data = makeProxy(this.data);
+  defineProperty(this, "props", descriptor);
+  this.data = makeProxy(data);
   // перезаписываем data, делая его прокси обьектом
 
   for (let item in this.data) {
@@ -131,72 +143,86 @@ const Dome = function(els = "", data = "") {
      this.el = node;
      return node
   }
+  defineProperty(this, "find", descriptor);
   // внутренняя функция поиска элемента
   this.Hide = function() {
      this.el.style.display = "none"
      return this;
   }
+  defineProperty(this, "Hide", descriptor);
   // спрятать элемента
   this.Show = function(el) {
      this.el.style.display = ""
      return this;
   }
+  defineProperty(this, "Show", descriptor);
   // показать элемент
   this.Toggle = function() {
      this.el.style.display == "none" ? this.el.style.display = "" : this.el.style.display = "none"
      return this;
   }
+  defineProperty(this, "Toggle", descriptor);
   // переключить показывание/скрытие
   this.Class = function(className) {
      this.el.classList.add(className)
      return this;
   }
+  defineProperty(this, "Class", descriptor);
   // добавить класс
   this.RemoveClass = function(className) {
      this.el.classList.remove(className)
      return this;
   }
+  defineProperty(this, "RemoveClass", descriptor);
   // удалить класс
   this.Text = function(text) {
      this.el.textContent = text;
      return this;
   }
+  defineProperty(this, "Text", descriptor);
   // заменить текст
   this.Append = function(text) {
      this.el.textContent = `${this.el.textContent} ${text}`
      return this;
   }
+  defineProperty(this, "Append", descriptor);
   // добавить текст в конец
   this.Act = function(fun, event) {
      this.el.addEventListener(event, fun)
      return this;
   }
+  defineProperty(this, "Act", descriptor);
   // добавить событие
   this.Css = function (text) {
      this.el.style.cssText = text
      return this;
   }
+  defineProperty(this, "Css", descriptor);
   // добавить код CSS
   this.Year = function() {
      let now = new Date();
      return now.getFullYear()
   }
+  defineProperty(this, "Year", descriptor);
   // показать год
   this.Month = function() {
      let now = new Date().getMonth();
      return month[now]
   }
+  defineProperty(this, "Month", descriptor);
   // показать месяц
   this.Day = function() {
      let now = new Date();
      let date = now.getDate();
      return `Сегодня ${date} число, ${week[now.getDay()]}`
   }
+  defineProperty(this, "Day", descriptor);
   // показать день
   this.Time = function () {
      let now = new Date();
      return `${now.getHours()}:${now.getMinutes()}`
   }
+  defineProperty(this, "Time", descriptor);
   // показать время
   this.Invisibility = function() {
      this.RemoveClass("showInLibrary")
@@ -206,6 +232,7 @@ const Dome = function(els = "", data = "") {
      }, 701);
      return this;
   }
+  defineProperty(this, "Invisibility", descriptor);
   // скрыть элемент с анимацией
   this.Visibility = function () {
      this.RemoveClass("hideInLibrary")
@@ -213,6 +240,7 @@ const Dome = function(els = "", data = "") {
      this.Show()
      return this;
   }
+  defineProperty(this, "Visibility", descriptor);
   // показать элемент с анимацией
   this.AddChild = function (el, text) {
      if (this.el.firstChild) {
@@ -223,6 +251,7 @@ const Dome = function(els = "", data = "") {
      }
      return this;
   }
+  defineProperty(this, "AddChild", descriptor);
   // добавить потомка
   this.Tp = function (data) {
     let x = data.toX;
@@ -232,6 +261,7 @@ const Dome = function(els = "", data = "") {
     this.el.style.left = y + "px";
     return this;
   };
+  defineProperty(this, "Tp", descriptor);
   // перемещение элемента на заданную позицию
   this.destroy = () => {
     if (this.data.destroyed) {
@@ -257,87 +287,79 @@ const Dome = function(els = "", data = "") {
   }
   // хук created
 
+  mixin(this.data.mixins, this.data, this)
   // начало реактивности
-   mixin(this.data.mixins, this.data, this)
    observeData(this.data, this.nodes, this)
 
    function syncNode (node, observable, property) {
      if (has(node, "d-for")) {
        return
      }
-     if (index(property, ".")) {
-       let prop = eval(`observable.${property}`)
-       node.textContent = prop
-     } else {
-       node.textContent = observable[property]
-     }
-     observe(property, () => node.textContent = observable[property])
+     node.textContent = findValue(observable, property)
+     observe(findProperty(observable, property), () => {
+       node.textContent = findValue(observable, property)
+     })
      // синхронизируем текст у node и уведомляем обработчик
      node.removeAttribute("d-text")
      node.removeAttribute("s-text")
    }
    function syncAsHtml(node, observable, property) {
-     if (index(property, ".")) {
-       let prop = eval(`observable.${property}`)
-       node.innerHTML = prop
-     } else {
-       node.innerHTML = observable[property]
-     }
-     observe(property, () => node.innerHTML = observable[property])
+     node.innerHTML = findValue(observable, property)
+     observe(findProperty(observable, property), () => node.innerHTML = findValue(observable, property))
      // синхронизируем html у node и уведомляем обработчик
      node.removeAttribute("d-html")
    }
    function syncOnce(node, observable, property) {
-     node.textContent = observable[property]
+     node.textContent = findValue(observable, property)
      node.removeAttribute("d-once")
      // синхронизируем текст у node и удаляем атрибут
    }
-   function ifNode(ifEl, data, proprety) {
-     if (!data[proprety]) {
-       ifEl.style.display = "none";
+   function ifNode(node, observable, property) {
+     let value = findValue(observable, property)
+     if (!value) {
+       node.style.display = "none";
        // если ложно - скрываем элемент и проверяем,
        // есть ли сосед с атрибутом d-else
-       if (ifEl.nextElementSibling) {
-         if (has(ifEl.nextElementSibling, "d-else-if")) {
-           ifNode(ifEl.nextElementSibling, data, ifEl.nextElementSibling.attributes["d-else-if"].value)
-         } else if (has(ifEl.nextElementSibling, "d-else")) {
-           ifEl.nextElementSibling.style.display = "";
+       if (node.nextElementSibling) {
+         if (has(node.nextElementSibling, "d-else-if")) {
+           ifNode(node.nextElementSibling, observable, node.nextElementSibling.attributes["d-else-if"].value)
+         } else if (has(node.nextElementSibling, "d-else")) {
+           node.nextElementSibling.style.display = "";
          }
        }
      } else {
        // иначе показываем элемент и ищем у соседа d-else,
        // если такой есть - скрываем его
-         ifEl.style.display = "";
-       if (ifEl.nextElementSibling) {
-         if (has(ifEl.nextElementSibling, "d-else-if")) {
-           ifNode(ifEl.nextElementSibling, data, ifEl.nextElementSibling.attributes["d-else-if"].value)
-         } else if (has(ifEl.nextElementSibling, "d-else")) {
-           ifEl.nextElementSibling.style.display = "none";
+         node.style.display = "";
+       if (node.nextElementSibling) {
+         if (has(node.nextElementSibling, "d-else-if")) {
+           ifNode(node.nextElementSibling, observable, node.nextElementSibling.attributes["d-else-if"].value)
+         } else if (has(node.nextElementSibling, "d-else")) {
+           node.nextElementSibling.style.display = "none";
          }
        }
      }
-     if (!signals[proprety]) {
-       observe(proprety, () => {
-         ifNode(ifEl, data, proprety)
+     if (!signals[property]) {
+       observe(property, () => {
+         ifNode(node, observable, property)
        })
      }
      // функция мпарсдум для иф элс элемента, удалить парс из геттеров и сеттеров
    }
 
    function syncValue(node, observable, property) {
-     if (index(property, ".")) {
-       let prop = eval(`observable.${property}`)
-       node.value = prop
-     } else {
-       node.value = observable[property]
-     } // значение инпута
+       node.value = findValue(observable, property)
+      // значение инпута
       // равно значению property
-    node.addEventListener("input", () => {
-       updateText(property, node) // привязываем input к property
-    })
-    // уведомляем обработчик
-    node.removeAttribute("d-text")
-    node.removeAttribute("s-text")
+      node.addEventListener("input", () => {
+        updateText(property, node) // привязываем input к property
+     })
+      observe(findProperty(observable, property), () => {
+        node.value = findValue(observable, property)
+      })
+      // уведомляем обработчик
+      node.removeAttribute("d-text")
+      node.removeAttribute("s-text")
    }
    function _anonimFor(node, observable, property, inner) {
      fors = new Map()
@@ -347,18 +369,19 @@ const Dome = function(els = "", data = "") {
      let remove = false;
      let text = node.textContent;
      let timeFors = fors;
+     let value = findValue(observable, lol)
      fors.clear()
 
      node.innerHTML = "";
      if (nodeName == "ul" || nodeName == "ol") {
        nodeName = "li";
      }
-     let childCount = observable[lol].length; // счётчик для единоразовой отрисовки
+     let childCount = value.length; // счётчик для единоразовой отрисовки
      node.childElementCount = 0;
      if (node.childElementCount < childCount) {
        // пока потомков меньше, чем нужно,
        // рисуем нового с данными из observable[lol][el]
-       for (let el in observable[lol]) {
+       for (let el in value) {
           let li = document.createElement(nodeName);
           if (nodename = 'div') {
             li.innerHTML = inner;
@@ -374,7 +397,7 @@ const Dome = function(els = "", data = "") {
                       li.setAttribute(variable.name, variable.value)
                     }
                 }
-              fors.set(li, observable[lol][el])
+              fors.set(li, value[el])
             } else {
               node.append(li)
               for (let variable of node.attributes) {
@@ -382,7 +405,7 @@ const Dome = function(els = "", data = "") {
                       li.setAttribute(variable.name, variable.value)
                     }
                 }
-              fors.set(li, observable[lol][el])
+              fors.set(li, value[el])
             }
       }
      }
@@ -396,6 +419,26 @@ const Dome = function(els = "", data = "") {
      fors = timeFors;
    }
    function syncFor(node, observable, property) {
+     let valid = {
+       get(target, key) {
+         if (key == isObserved) {
+           return true;
+         }
+         if (isObject(target[key])) {
+           return new Proxy(target[key], valid)
+         } else {
+           return target[key]
+         }
+       },
+       set(target, key, value) {
+         target[key] = value;
+         if ( key != "specialIndexForSpecialClicks") {
+           _anonimFor(node, observable, property, inner)
+         }
+         return true
+       }
+
+     }
      let lol = property.slice(property.lastIndexOf(" ") + 1, property.length)
      let nodeName = node.nodeName.toLowerCase() // узнаем имя node
      let index = 0;
@@ -403,35 +446,22 @@ const Dome = function(els = "", data = "") {
      let text = node.textContent;
      let inner = node.innerHTML;
      let timeFors = fors;
+     let value = findValue(observable, lol)
      fors.clear()
      if (!observable[lol][isObserved]) {
-       observable[lol] = new Proxy(observable[lol], {
-         get(target, key) {
-           if (key == isObserved) {
-             return true;
-           }
-           return target[key]
-         },
-         set(target, key, value) {
-           target[key] = value;
-           if (key == "length") {
-             _anonimFor(node, observable, property, inner)
-           }
-           return true
-         }
-       })
+       observable[lol] = new Proxy(observable[lol], valid)
      }
      // узнаем значение, которое требуется искать в data
      node.innerHTML = "";
      if (nodeName == "ul" || nodeName == "ol") {
        nodeName = "li";
      }
-     let childCount = observable[lol].length; // счётчик для единоразовой отрисовки
+     let childCount = value.length; // счётчик для единоразовой отрисовки
      node.childElementCount = 0;
      if (node.childElementCount < childCount) {
        // пока потомков меньше, чем нужно,
        // рисуем нового с данными из observable[lol][el]
-       for (let el in observable[lol]) {
+       for (let el in value) {
           let li = document.createElement(nodeName);
           if (nodename = 'div') {
             li.innerHTML = inner;
@@ -447,8 +477,7 @@ const Dome = function(els = "", data = "") {
                       li.setAttribute(variable.name, variable.value)
                     }
                 }
-              //  forsMaps.set()
-              fors.set(li, observable[lol][el])
+              fors.set(li, value[el])
             } else {
               node.append(li)
               for (let variable of node.attributes) {
@@ -456,15 +485,23 @@ const Dome = function(els = "", data = "") {
                       li.setAttribute(variable.name, variable.value)
                     }
                 }
-              fors.set(li, observable[lol][el])
+              fors.set(li, value[el])
             }
       }
      }
      remove ? node.remove() : ""
      let specialIndexForSpecialClicks = 0
      fors.forEach((item, node) => {
-       item.specialIndexForSpecialClicks = specialIndexForSpecialClicks++
-       item.constIndex = `node-${specialIndexForSpecialClicks}`
+       defineProperty(item, "specialIndexForSpecialClicks", {
+         value: specialIndexForSpecialClicks++,
+         configurable: true,
+         writable: true,
+         enumerable: false
+       })
+       defineProperty(item, "constIndex", {
+         value: `node-${specialIndexForSpecialClicks}`,
+         enumerable: false
+       })
        parseEL(node, item, observable)
      });
      specialIndexForSpecialClicks = 0
@@ -625,7 +662,7 @@ const Dome = function(els = "", data = "") {
          let gap = indexOf(property, ", ")
          if (gap != -1) {
            let lol = property.slice(indexOf(property, ":") + 2, gap)
-           props = eval(`observable.${prop}`)
+           props = findValue(observable, prop)
            if (props) {
              node.setAttribute(lol, props)
              observe(prop, () => node.setAttribute(lol, props))
@@ -633,7 +670,7 @@ const Dome = function(els = "", data = "") {
            property = property.slice(gap + 2, property.length)
            syncBind(node, observable, property)
          } else {
-           props = eval(`observable.${prop}`)
+           props = findValue(observable, prop)
            let lol = property.slice(property.lastIndexOf(":") + 2, property.length)
            node.setAttribute(lol, props)
            observe(prop, () => {
@@ -641,7 +678,8 @@ const Dome = function(els = "", data = "") {
            })
          }
    }
-   function syncSpecialClicks(node, data, property, observable) {
+// IDEA: ПЕРЕПИСАТЬ БИНД С ЧИСТОГО ЛИСТА
+   function syncSpecialClicks(node, data, property, observable) {+
        syncClicks(node, data, property, observable)
    }
    // для массива из точенной нотации
@@ -655,6 +693,24 @@ const Dome = function(els = "", data = "") {
      set.add(end)
      if (index(slice, "this.")) {
        nesting(slice, observable, set)
+     }
+   }
+   function findValue(observable, value) {
+     if (index(value, ".")) {
+       let obj = value.slice(0, indexOf(value, "."))
+       let nextValue = value.slice(indexOf(value, ".") + 1, value.length)
+       return findValue(observable[obj], nextValue);
+     } else {
+       return observable[value]
+     }
+   }
+   function findProperty(observable, value) {
+     if (index(value, ".")) {
+       let obj = value.slice(0, indexOf(value, "."))
+       let nextValue = value.slice(indexOf(value, ".") + 1, value.length)
+       return findProperty(observable[obj], nextValue);
+     } else {
+       return value
      }
    }
 // IDEA: СДЕЛАТЬ МУСТАЧЕСЫ МАПОМ ЧТОБЫ КЛЮЧИ В ВИДЕ {{ИМЯ}} НЕ ПУТАЛИСЬ И ЦИКЛ ВЫВОДИЛСЯ НОРМАЛЬНО
@@ -672,7 +728,7 @@ const Dome = function(els = "", data = "") {
              let value = text.slice(indexOne + 2, indexTwo).trim()
 
              if (index(value, ".")) {
-               var prop = eval(`observable.${value}`)
+               let prop = findValue(observable, value)
                mustaches[text] = node
                text = prop + text.slice(indexTwo + 2, text.length)
              } else {
@@ -699,7 +755,7 @@ const Dome = function(els = "", data = "") {
            let value = text.slice(indexOne + 2, indexTwo).trim()
 
            if (index(value, ".")) {
-             value = eval(`observable.${value}`)
+             value = findValue(observable, value)
              text = value + text.slice(indexTwo + 2, text.length)
            } else {
              text = observable[value] + text.slice(indexTwo + 2, text.length)
@@ -727,7 +783,7 @@ const Dome = function(els = "", data = "") {
      if (index(node.innerHTML, "{{")) {
        syncVM(node, observable)
      }
-     if (node.nodeName != "DIV") {
+     if (node.nodeName != "DIV" && node.nodeName != "LI") {
        if (has(node, "d-bind")) {
              syncBind(node, observable, node.attributes['d-bind'].value)
        }
@@ -845,7 +901,6 @@ const Dome = function(els = "", data = "") {
       inpt = qsa(`${node} [d-input]`);
       vm = qsa(`${node} :not(input, button)`);
       clicks = qsa(`${node} [d-click]`);
-
 
      // для кадого найденного элемента с атрибутом x вызываем функцию,
      // связанную c этим x атрибутом
@@ -1048,15 +1103,11 @@ const Dome = function(els = "", data = "") {
       }
     }
    let updateText = (property, e) => {
-     if (index(property, ".")) {
        eval(`this.data.${property} = e.value;`)
-     } else {
-       this.data[property] = e.value;
-     }
    }
 
    function syncLocalValue(node, observable, property) {
-    node.value = observable[property]
+    node.value = findValue(observable, property)
     node.addEventListener("input", () => {
       observable[property] = node.value
     })
@@ -1129,7 +1180,7 @@ const Dome = function(els = "", data = "") {
        }
        connectedCallback() {
          this.innerHTML = template
-         for (var variable of this.attributes) {
+         for (let variable of this.attributes) {
            if (!variable.name.startsWith("d-")) {
              this.data[variable.name] = variable.value
            }
@@ -1154,11 +1205,12 @@ const Dome = function(els = "", data = "") {
      }
      // хук parsed
    }
+   defineProperty(this, "custom", descriptor);
    // метод для компонентов
    function mixin(obj, obj2, parent) {
      if (isArray(obj)) {
        for (let variable of obj) {
-         for (var el in variable) {
+         for (let el in variable) {
            if (isString(variable[el])) {
                obj2[el] = variable[el]
            } else if (isFunction(variable[el])) {
@@ -1173,7 +1225,7 @@ const Dome = function(els = "", data = "") {
          }
        }
      } else if (isObject(obj)) {
-         for (var el in obj) {
+         for (let el in obj) {
            if (isString(obj[el])) {
                obj2[el] = obj[el]
            } else if (isFunction(obj[el])) {
@@ -1247,5 +1299,3 @@ const Dome = function(els = "", data = "") {
    // самовызываящаяся функция для убирания d-cloak
 };
 // Конец самой библиотеки
-
-
