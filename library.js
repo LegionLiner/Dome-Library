@@ -3,7 +3,7 @@ const isProxy = Symbol("isProxy")
 const isObserved = Symbol("isObserved")
 
 // Начало самой библиотеки
-const Dome = function(els = "", data = "") {
+const Dome = function(el = "", data = "") {
   if (data.beforeCreated) {
     data.beforeCreated()
   }
@@ -69,7 +69,7 @@ const Dome = function(els = "", data = "") {
   const week = ["Воскресенье", "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"]
   // нужные константы.
 
-  this.nodes = [els]
+  this.nodes = [el]
   defineProperty(this, "nodes", descriptor);
   function makeProxy(datas) {
     let validator = {
@@ -1289,7 +1289,7 @@ const Dome = function(els = "", data = "") {
    // хук mounted, выполняется сразу при готовности приложения
 
    setTimeout(() => {
-     let elem = this.find(els)
+     let elem = this.find(el)
      if (elem) {
        if (has(elem, "d-cloak")) {
          elem.removeAttribute("d-cloak")
@@ -1299,3 +1299,4 @@ const Dome = function(els = "", data = "") {
    // самовызываящаяся функция для убирания d-cloak
 };
 // Конец самой библиотеки
+
