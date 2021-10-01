@@ -1,4 +1,3 @@
-
 const isProxy = Symbol("isProxy")
 const isObserved = Symbol("isObserved")
 
@@ -16,6 +15,7 @@ const Dome = function(el = "", data = "") {
   let custom = {};
   let forsMaps = new Map();
   let observed = new Map();
+  let forsSignals = new Map();
 
   const descriptor = {
     enumerable: false,
@@ -137,6 +137,9 @@ const Dome = function(el = "", data = "") {
      }
    }
    // укорачиваю синтаксис поиска
+
+  {
+    // методы фреймворка, для удобства разработки я их скрыл таким способом
 
   this.find = (els) => {
      let node = document.querySelector(els)
@@ -263,6 +266,8 @@ const Dome = function(el = "", data = "") {
   };
   defineProperty(this, "Tp", descriptor);
   // перемещение элемента на заданную позицию
+  }
+
   this.destroy = () => {
     if (this.data.destroyed) {
       this.data.destroyed()
@@ -289,23 +294,25 @@ const Dome = function(el = "", data = "") {
 
   mixin(this.data.mixins, this.data, this)
   // начало реактивности
-   observeData(this.data, this.nodes, this)
+  observeData(this.data, this.nodes, this)
 
    function syncNode (node, observable, property) {
      if (has(node, "d-for")) {
        return
      }
      node.textContent = findValue(observable, property)
-     observe(findProperty(observable, property), () => {
-       node.textContent = findValue(observable, property)
-     })
+     if (!signals[findproperty(observable, property)]) {
+       observe(findproperty(observable, property), () => {
+         node.textContent = findValue(observable, property)
+       })
+     }
      // синхронизируем текст у node и уведомляем обработчик
      node.removeAttribute("d-text")
      node.removeAttribute("s-text")
    }
    function syncAsHtml(node, observable, property) {
      node.innerHTML = findValue(observable, property)
-     observe(findProperty(observable, property), () => node.innerHTML = findValue(observable, property))
+     observe(findproperty(observable, property), () => node.innerHTML = findValue(observable, property))
      // синхронизируем html у node и уведомляем обработчик
      node.removeAttribute("d-html")
    }
@@ -315,7 +322,16 @@ const Dome = function(el = "", data = "") {
      // синхронизируем текст у node и удаляем атрибут
    }
    function ifNode(node, observable, property) {
-     let value = findValue(observable, property)
+     let value = property;
+     let prop = property
+     if (index(property, "!")) {
+       prop = property.slice(1, property.length)
+       value = findValue(observable, prop)
+       value = !value
+       prop = prop.slice(indexOf(prop, ".") + 1, prop.length)
+     } else {
+       value = findValue(observable, property)
+     }
      if (!value) {
        node.style.display = "none";
        // если ложно - скрываем элемент и проверяем,
@@ -339,12 +355,11 @@ const Dome = function(el = "", data = "") {
          }
        }
      }
-     if (!signals[property]) {
-       observe(property, () => {
+     if (!signals[prop]) {
+       observe(prop, () => {
          ifNode(node, observable, property)
        })
      }
-     // функция мпарсдум для иф элс элемента, удалить парс из геттеров и сеттеров
    }
 
    function syncValue(node, observable, property) {
@@ -354,7 +369,7 @@ const Dome = function(el = "", data = "") {
       node.addEventListener("input", () => {
         updateText(property, node) // привязываем input к property
      })
-      observe(findProperty(observable, property), () => {
+      observe(findproperty(observable, property), () => {
         node.value = findValue(observable, property)
       })
       // уведомляем обработчик
@@ -410,9 +425,11 @@ const Dome = function(el = "", data = "") {
       }
      }
      remove ? node.remove() : ""
-     let specialIndexForSpecialClicks = 0
+     let specialIndexForSpecialClicks = 0;
      fors.forEach((item, node) => {
+    //   console.log(item);
        item.specialIndexForSpecialClicks = specialIndexForSpecialClicks++
+    //   console.log(item);
        parseEL(node, item, observable)
      });
      specialIndexForSpecialClicks = 0;
@@ -432,7 +449,7 @@ const Dome = function(el = "", data = "") {
        },
        set(target, key, value) {
          target[key] = value;
-         if ( key != "specialIndexForSpecialClicks") {
+         if ( key != "specialIndexForSpecialClicks" || key == "length") {
            _anonimFor(node, observable, property, inner)
          }
          return true
@@ -447,10 +464,13 @@ const Dome = function(el = "", data = "") {
      let inner = node.innerHTML;
      let timeFors = fors;
      let value = findValue(observable, lol)
-     fors.clear()
      if (!observable[lol][isObserved]) {
+       observe(lol, () => {
+        _anonimFor(node, observable, property, inner)
+       })
        observable[lol] = new Proxy(observable[lol], valid)
      }
+     fors.clear()
      // узнаем значение, которое требуется искать в data
      node.innerHTML = "";
      if (nodeName == "ul" || nodeName == "ol") {
@@ -498,10 +518,12 @@ const Dome = function(el = "", data = "") {
          writable: true,
          enumerable: false
        })
-       defineProperty(item, "constIndex", {
-         value: `node-${specialIndexForSpecialClicks}`,
-         enumerable: false
-       })
+         defineProperty(item, "constIndex", {
+           value: `node-${specialIndexForSpecialClicks}`,
+           configurable: true,
+           writable: true,
+           enumerable: false
+         })
        parseEL(node, item, observable)
      });
      specialIndexForSpecialClicks = 0
@@ -510,133 +532,133 @@ const Dome = function(el = "", data = "") {
    }
 
    // внизу куча EventListener на свой атрибут
-   function syncClicks(clickEL, data, proprety, dForData) {
+   function syncClicks(node, data, property, dForData) {
      if (dForData) {
-       clickEL.addEventListener("click", () => {
-         dForData.methods[proprety].call(dForData, data.specialIndexForSpecialClicks, data)
+       node.addEventListener("click", () => {
+         dForData.methods[property].call(dForData, data.specialIndexForSpecialClicks)
        })
      } else {
-       if (startsWith$(proprety)) {
-         let event = proprety.slice(1, proprety.length)
-         clickEL.addEventListener("click", data.$methods[event])
+       if (startsWith$(property)) {
+         let event = property.slice(1, property.length)
+         node.addEventListener("click", data.$methods[event])
          return
        }
-       clickEL.addEventListener("click", data.methods[proprety])
+       node.addEventListener("click", data.methods[property])
      }
-       clickEL.removeAttribute("d-click")
+       node.removeAttribute("d-click")
    }
-   function syncDblclick(clickEL, data, proprety) {
-     if (startsWith$(proprety)) {
-       let event = proprety.slice(1, proprety.length)
-       clickEL.addEventListener("dblclick", data.$methods[event])
+   function syncDblclick(node, data, property) {
+     if (startsWith$(property)) {
+       let event = property.slice(1, property.length)
+       node.addEventListener("dblclick", data.$methods[event])
        return
      }
-     clickEL.addEventListener("dblclick", data.methods[proprety])
+     node.addEventListener("dblclick", data.methods[property])
      node.removeAttribute("d-dblclick")
    }
-   function syncMousedown(clickEL, data, proprety) {
-     if (startsWith$(proprety)) {
-       let event = proprety.slice(1, proprety.length)
-       clickEL.addEventListener("mousedown", data.$methods[event])
+   function syncMousedown(node, data, property) {
+     if (startsWith$(property)) {
+       let event = property.slice(1, property.length)
+       node.addEventListener("mousedown", data.$methods[event])
        return
      }
-     clickEL.addEventListener("mousedown", data.methods[proprety])
+     node.addEventListener("mousedown", data.methods[property])
    }
-   function syncMouseup(clickEL, data, proprety) {
-     if (startsWith$(proprety)) {
-       let event = proprety.slice(1, proprety.length)
-       clickEL.addEventListener("mouseup", data.$methods[event])
+   function syncMouseup(node, data, property) {
+     if (startsWith$(property)) {
+       let event = property.slice(1, property.length)
+       node.addEventListener("mouseup", data.$methods[event])
        return
      }
-     clickEL.addEventListener("mouseup", data.methods[proprety])
+     node.addEventListener("mouseup", data.methods[property])
    }
-   function syncSelect(clickEL, data, proprety) {
-     if (startsWith$(proprety)) {
-       let event = proprety.slice(1, proprety.length)
-       clickEL.addEventListener("select", data.$methods[event])
+   function syncSelect(node, data, property) {
+     if (startsWith$(property)) {
+       let event = property.slice(1, property.length)
+       node.addEventListener("select", data.$methods[event])
        return
      }
-     clickEL.addEventListener("select", data.methods[proprety])
+     node.addEventListener("select", data.methods[property])
    }
-   function syncMouseenter(clickEL, data, proprety) {
-     if (startsWith$(proprety)) {
-       let event = proprety.slice(1, proprety.length)
-       clickEL.addEventListener("mouseenter", data.$methods[event])
+   function syncMouseenter(node, data, property) {
+     if (startsWith$(property)) {
+       let event = property.slice(1, property.length)
+       node.addEventListener("mouseenter", data.$methods[event])
        return
      }
-     clickEL.addEventListener("mouseenter", data.methods[proprety])
+     node.addEventListener("mouseenter", data.methods[property])
    }
-   function syncmMuseleave(clickEL, data, proprety) {
-     if (startsWith$(proprety)) {
-       let event = proprety.slice(1, proprety.length)
-       clickEL.addEventListener("mouseleave", data.$methods[event])
+   function syncmMuseleave(node, data, property) {
+     if (startsWith$(property)) {
+       let event = property.slice(1, property.length)
+       node.addEventListener("mouseleave", data.$methods[event])
        return
      }
-     clickEL.addEventListener("mouseleave", data.methods[proprety])
+     node.addEventListener("mouseleave", data.methods[property])
    }
-   function syncMousemove(clickEL, data, proprety) {
-     if (startsWith$(proprety)) {
-       let event = proprety.slice(1, proprety.length)
-       clickEL.addEventListener("mousemove", data.$methods[event])
+   function syncMousemove(node, data, property) {
+     if (startsWith$(property)) {
+       let event = property.slice(1, property.length)
+       node.addEventListener("mousemove", data.$methods[event])
        return
      }
-     clickEL.addEventListener("mousemove", data.methods[proprety])
+     node.addEventListener("mousemove", data.methods[property])
    }
-   function syncMouseover(clickEL, data, proprety) {
-     if (startsWith$(proprety)) {
-       let event = proprety.slice(1, proprety.length)
-       clickEL.addEventListener("mouseover", data.$methods[event])
+   function syncMouseover(node, data, property) {
+     if (startsWith$(property)) {
+       let event = property.slice(1, property.length)
+       node.addEventListener("mouseover", data.$methods[event])
        return
      }
-     clickEL.addEventListener("mouseover", data.methods[proprety])
+     node.addEventListener("mouseover", data.methods[property])
    }
-   function syncDrag(clickEL, data, proprety) {
-     if (startsWith$(proprety)) {
-       let event = proprety.slice(1, proprety.length)
-       clickEL.addEventListener("drag", data.$methods[event])
+   function syncDrag(node, data, property) {
+     if (startsWith$(property)) {
+       let event = property.slice(1, property.length)
+       node.addEventListener("drag", data.$methods[event])
        return
      }
-     clickEL.addEventListener("drag", data.methods[proprety])
+     node.addEventListener("drag", data.methods[property])
    }
-   function syncDrop(clickEL, data, proprety) {
-     if (startsWith$(proprety)) {
-       let event = proprety.slice(1, proprety.length)
-       clickEL.addEventListener("drop", data.$methods[event])
+   function syncDrop(node, data, property) {
+     if (startsWith$(property)) {
+       let event = property.slice(1, property.length)
+       node.addEventListener("drop", data.$methods[event])
        return
      }
-     clickEL.addEventListener("drop", data.methods[proprety])
+     node.addEventListener("drop", data.methods[property])
    }
-   function syncTouchcancel(clickEL, data, proprety) {
-     if (startsWith$(proprety)) {
-       let event = proprety.slice(1, proprety.length)
-       clickEL.addEventListener("touchcancel", data.$methods[event])
+   function syncTouchcancel(node, data, property) {
+     if (startsWith$(property)) {
+       let event = property.slice(1, property.length)
+       node.addEventListener("touchcancel", data.$methods[event])
        return
      }
-     clickEL.addEventListener("touchcancel", data.methods[proprety])
+     node.addEventListener("touchcancel", data.methods[property])
    }
-   function syncTouchstart(clickEL, data, proprety) {
-     if (startsWith$(proprety)) {
-       let event = proprety.slice(1, proprety.length)
-       clickEL.addEventListener("touchstart", data.$methods[event])
+   function syncTouchstart(node, data, property) {
+     if (startsWith$(property)) {
+       let event = property.slice(1, property.length)
+       node.addEventListener("touchstart", data.$methods[event])
        return
      }
-     clickEL.addEventListener("touchstart", data.methods[proprety])
+     node.addEventListener("touchstart", data.methods[property])
    }
-   function syncTouchend(clickEL, data, proprety) {
-     if (startsWith$(proprety)) {
-       let event = proprety.slice(1, proprety.length)
-       clickEL.addEventListener("touchend", data.$methods[event])
+   function syncTouchend(node, data, property) {
+     if (startsWith$(property)) {
+       let event = property.slice(1, property.length)
+       node.addEventListener("touchend", data.$methods[event])
        return
      }
-     clickEL.addEventListener("touchend", data.methods[proprety])
+     node.addEventListener("touchend", data.methods[property])
    }
-   function syncTouchmove(clickEL, data, proprety) {
-     if (startsWith$(proprety)) {
-       let event = proprety.slice(1, proprety.length)
-       clickEL.addEventListener("touchmove", data.$methods[event])
+   function syncTouchmove(node, data, property) {
+     if (startsWith$(property)) {
+       let event = property.slice(1, property.length)
+       node.addEventListener("touchmove", data.$methods[event])
        return
      }
-     clickEL.addEventListener("touchmove", data.methods[proprety])
+     node.addEventListener("touchmove", data.methods[property])
    }
    function selfRender(node, observable, property) {
      for (let variable in observable) {
@@ -650,7 +672,7 @@ const Dome = function(el = "", data = "") {
      }
    }
    function syncInpt(node, observable, property) {
-     if (startsWith$(proprety)) {
+     if (startsWith$(property)) {
        let event = property.slice(1, property.length)
        node.addEventListener("input", observable.$methods[event])
        return
@@ -658,27 +680,40 @@ const Dome = function(el = "", data = "") {
      node.addEventListener("input", observable.methods[property])
    }
    function syncBind(node, observable, property) {
-     let prop = property.slice(0, indexOf(property, ":"))
-         let gap = indexOf(property, ", ")
-         if (gap != -1) {
-           let lol = property.slice(indexOf(property, ":") + 2, gap)
-           props = findValue(observable, prop)
-           if (props) {
-             node.setAttribute(lol, props)
-             observe(prop, () => node.setAttribute(lol, props))
-           }
-           property = property.slice(gap + 2, property.length)
-           syncBind(node, observable, property)
-         } else {
-           props = findValue(observable, prop)
-           let lol = property.slice(property.lastIndexOf(":") + 2, property.length)
-           node.setAttribute(lol, props)
-           observe(prop, () => {
-             node.setAttribute(lol, props)
+     if (property.startsWith(":")) {
+       let prop = property.slice(1, property.length)
+       let attrName = prop.slice(0, indexOf(prop, "="))
+       let attrValue = prop.slice(indexOf(prop, "=") + 2, indexOf(prop, ":") - 1)
+       let condition = prop.slice(indexOf(prop, ":") + 2, prop.length)
+       if (index(prop, ", ")) {
+         condition = prop.slice(indexOf(prop, ":") + 2, indexOf(prop, ", "))
+         prop = prop.slice(indexOf(prop, ", ") + 2, prop.length)
+         syncBind(node, observable, prop)
+       }
+       if (findValue(observable, condition)) {
+         node.setAttribute(attrName, attrValue)
+         if (!signals[findproperty(observable, condition)]) {
+           observe(findproperty(observable, condition), () => {
+             syncBind(node, observable, property)
            })
          }
+       }
+     } else {
+       let attrName = property.slice(0, indexOf(property, ":"))
+       let condition = property.slice(indexOf(property, ":") + 2, property.length)
+       if (index(property, ", ")) {
+         condition = property.slice(indexOf(property, ":") + 2, indexOf(property, ", "))
+         prop = property.slice(indexOf(property, ", ") + 2, property.length)
+         syncBind(node, observable, prop)
+       }
+         node.setAttribute(attrName, findValue(observable, condition))
+         if (!signals[findproperty(observable, condition)]) {
+           observe(findproperty(observable, condition), () => {
+             syncBind(node, observable, property)
+           })
+       }
+     }
    }
-// IDEA: ПЕРЕПИСАТЬ БИНД С ЧИСТОГО ЛИСТА
    function syncSpecialClicks(node, data, property, observable) {+
        syncClicks(node, data, property, observable)
    }
@@ -688,8 +723,10 @@ const Dome = function(el = "", data = "") {
      let slice = value.slice(start + 5, value.length)
      let gap = slice.indexOf(" ")
      let end = slice.slice(0, gap)
+     index(end, ".") ? end = end.slice(0, indexOf(end, ".")) : false
      index(end, "\n") ? end = end.slice(0, gap - 1) : false
      index(end, "}") ? end = end.slice(0, indexOf(end, "}")) : false
+     index(end, ";") ? end = end.slice(0, indexOf(end, ";")) : false
      set.add(end)
      if (index(slice, "this.")) {
        nesting(slice, observable, set)
@@ -704,11 +741,11 @@ const Dome = function(el = "", data = "") {
        return observable[value]
      }
    }
-   function findProperty(observable, value) {
+   function findproperty(observable, value) {
      if (index(value, ".")) {
        let obj = value.slice(0, indexOf(value, "."))
        let nextValue = value.slice(indexOf(value, ".") + 1, value.length)
-       return findProperty(observable[obj], nextValue);
+       return findproperty(observable[obj], nextValue);
      } else {
        return value
      }
@@ -757,8 +794,10 @@ const Dome = function(el = "", data = "") {
            if (index(value, ".")) {
              value = findValue(observable, value)
              text = value + text.slice(indexTwo + 2, text.length)
+             mustaches[text] = node
            } else {
              text = observable[value] + text.slice(indexTwo + 2, text.length)
+             mustaches[text] = node
            }
            node.innerHTML = previousText + text
 
@@ -777,6 +816,15 @@ const Dome = function(el = "", data = "") {
          }
        }
      }
+   }
+   function syncSelect(node, observable, property) {
+     observable[property] = node.value
+     node.addEventListener("input", () => {
+       observable[property] = node.value // привязываем input к property
+    })
+    observe(findproperty(observable, property), () => {
+      node.value = findValue(observable, property)
+    })
    }
 
    function parseEL(node, observable, data) {
@@ -806,6 +854,9 @@ const Dome = function(el = "", data = "") {
        if (has(node, "d-click")) {
              syncSpecialClicks(node, observable, node.attributes['d-click'].value)
        }
+       if (has(node, "d-model")) {
+             syncSpecialClicks(node, observable, node.attributes['d-model'].value)
+       }
      } else {
        let random = "d-for-class"
        node.classList.add(random)
@@ -817,6 +868,7 @@ const Dome = function(el = "", data = "") {
         ifs = qsa(`.${random} [d-if]`);
         bind = qsa(`.${random} [d-bind]`);
         clicks = qsa(`.${random} [d-click]`);
+        model = qsa(`${random} [d-model]`);
 
        node.classList.remove(random)
 
@@ -825,6 +877,11 @@ const Dome = function(el = "", data = "") {
        });
        ifs.forEach((item) => {
          ifNode(item, observable, item.attributes['d-if'].value)
+       });
+       model.forEach((node) => {
+         if (node.nodeName == "SELECT") {
+           syncSelect(node, observable, node.attributes['d-model'].value)
+         }
        });
        classes.forEach((bind) => {
          syncClass(bind, observable, bind.attributes['d-class'].value)
@@ -842,14 +899,10 @@ const Dome = function(el = "", data = "") {
        asHtml.forEach((item) => {
            syncAsHtml(item, observable, item.attributes['d-html'].value)
          });
-         if (clicks.length) {
-        //   console.log(clicks, data);
-         }
-       clicks.forEach((item) => {
-        // console.log(data);
-         syncSpecialClicks(item, observable, item.attributes['d-click'].value, data)
-         item.removeAttribute("d-click")
-       });
+         clicks.forEach((item) => {
+           syncSpecialClicks(item, observable, item.attributes['d-click'].value, data)
+           item.removeAttribute("d-click")
+         });
      }
      if (!observed.has(observable.constIndex)) {
        observed.set(observable.constIndex, node)
@@ -868,6 +921,7 @@ const Dome = function(el = "", data = "") {
        }
      }
    }
+   // сделать парс по нодтайпу или по наличию потомков
    function parseDOM (node, observable) {
      // парс DOM, ищем все атрибуты в node
      let bind = qsa(`${node} [d-bind]`);
@@ -901,15 +955,21 @@ const Dome = function(el = "", data = "") {
       inpt = qsa(`${node} [d-input]`);
       vm = qsa(`${node} :not(input, button)`);
       clicks = qsa(`${node} [d-click]`);
+      model = qsa(`${node} [d-model]`);
 
      // для кадого найденного элемента с атрибутом x вызываем функцию,
      // связанную c этим x атрибутом
 
      nodes.forEach((node) => {
-       if (has(node, "value")) {
+       if (node.nodeName == "INPUT") {
          syncValue(node, observable, node.attributes['d-text'].value)
        } else {
          syncNode(node, observable, node.attributes['d-text'].value)
+       }
+     });
+     model.forEach((node) => {
+       if (node.nodeName == "SELECT") {
+         syncSelect(node, observable, node.attributes['d-model'].value)
        }
      });
      inpt.forEach((item) => {
@@ -1084,7 +1144,6 @@ const Dome = function(el = "", data = "") {
        })
      }
    }
-
    function observeData (obj, nodes, customs) {
        for (let key in obj) {
          if (obj.hasOwnProperty(key)) {
@@ -1102,6 +1161,7 @@ const Dome = function(el = "", data = "") {
                                    // все реактивные свойства
       }
     }
+
    let updateText = (property, e) => {
        eval(`this.data.${property} = e.value;`)
    }
@@ -1113,9 +1173,9 @@ const Dome = function(el = "", data = "") {
     })
     node.removeAttribute("s-text")
    }
-   function syncLocalClicks(clickEL, datas, proprety) {
-      clickEL.addEventListener("click", datas.methods[proprety].bind(datas))
-      clickEL.removeAttribute("s-click")
+   function syncLocalClicks(node, datas, property) {
+      node.addEventListener("click", datas.methods[property].bind(datas))
+      node.removeAttribute("s-click")
  }
 
    function observeLocalData (obj, nodes, customs) {
