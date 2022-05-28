@@ -1,7 +1,6 @@
 const isProxy = Symbol('isProxy');
 const isObserved = Symbol('isObserved');
 
-
 // Начало библиотеки
 const Dome = function (el = '', data = '') {
   if (data.beforeCreated) {
