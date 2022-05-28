@@ -1,7 +1,7 @@
 const isProxy = Symbol('isProxy');
 const isObserved = Symbol('isObserved');
 
-// Начало самой библиотеки
+// Начало библиотеки
 const Dome = function (el = '', data = '') {
   if (data.beforeCreated) {
     data.beforeCreated();
@@ -1402,4 +1402,4 @@ const Dome = function (el = '', data = '') {
   }, 1);
   // самовызываящаяся функция для убирания d-cloak
 };
-// Конец самой библиотеки
+// Конец библиотеки
