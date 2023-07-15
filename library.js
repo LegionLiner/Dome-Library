@@ -1,13 +1,5 @@
 const isProxy = Symbol('isProxy');
 const isObserved = Symbol('isObserved');
-
-// Начало библиотеки
-const Dome = function (el = '', data = '') {
-  if (data.beforeCreated) {
-    data.beforeCreated();
-  }
-  // хук beforeCreated
-
   const signals = {};
   const mustaches = {};
   let fors = new Map();
@@ -16,6 +8,13 @@ const Dome = function (el = '', data = '') {
   const forsMaps = new Map();
   const observed = new Map();
   const forsSignals = new Map();
+
+// Начало самой библиотеки
+const Dome = function (el = '', data = '') {
+  if (data.beforeCreated) {
+    data.beforeCreated();
+  }
+  // хук beforeCreated
 
   const descriptor = {
     enumerable: false,
@@ -77,6 +76,11 @@ const Dome = function (el = '', data = '') {
   // нужные константы.
 
   this.nodes = [el];
+  defineProperty(this, 'el', {
+    enumerable: false,
+    writable: true,
+    configurable: false,
+  });
   defineProperty(this, 'nodes', descriptor);
   function makeProxy(datas) {
     const validator = {
@@ -145,7 +149,6 @@ const Dome = function (el = '', data = '') {
 
   {
     // методы фреймворка, для удобства разработки я их скрыл таким способом
-
     this.find = (els) => {
       const node = document.querySelector(els);
       this.el = node;
@@ -159,7 +162,7 @@ const Dome = function (el = '', data = '') {
     };
     defineProperty(this, 'Hide', descriptor);
     // спрятать элемента
-    this.Show = function (el) {
+    this.Show = function () {
       this.el.style.display = '';
       return this;
     };
@@ -234,24 +237,26 @@ const Dome = function (el = '', data = '') {
     };
     defineProperty(this, 'Time', descriptor);
     // показать время
-    this.Invisibility = function () {
-      this.RemoveClass('showInLibrary');
-      this.Class('hideInLibrary');
-      setTimeout(() => {
-        this.el.style.display = 'none';
-      }, 701);
-      return this;
-    };
-    defineProperty(this, 'Invisibility', descriptor);
-    // скрыть элемент с анимацией
-    this.Visibility = function () {
-      this.RemoveClass('hideInLibrary');
-      this.Class('showInLibrary');
-      this.Show();
-      return this;
-    };
-    defineProperty(this, 'Visibility', descriptor);
-    // показать элемент с анимацией
+    /*
+        this.Invisibility = function () {
+          this.RemoveClass('showInLibrary');
+          this.Class('hideInLibrary');
+          setTimeout(() => {
+            this.el.style.display = 'none';
+          }, 701);
+          return this;
+        };
+        defineProperty(this, 'Invisibility', descriptor);
+        // скрыть элемент с анимацией
+        this.Visibility = function () {
+          this.RemoveClass('hideInLibrary');
+          this.Class('showInLibrary');
+          this.Show();
+          return this;
+        };
+        defineProperty(this, 'Visibility', descriptor);
+        // показать элемент с анимацией
+    */
     this.AddChild = function (el, text) {
       if (this.el.firstChild) {
         let timeEl = document.createElement(el);
@@ -299,7 +304,7 @@ const Dome = function (el = '', data = '') {
   }
   // хук created
 
-  mixin(this.data.mixins, this.data, this);
+  mixin(this.data.mixins, this.data, this); // в миксинах нет смысла(?)
   // начало реактивности
   observeData(this.data, this.nodes, this);
 
@@ -308,11 +313,9 @@ const Dome = function (el = '', data = '') {
       return;
     }
     node.textContent = findValue(observable, property);
-    if (!signals[findproperty(observable, property)]) {
-      observe(findproperty(observable, property), () => {
+    observe(findproperty(observable, property), () => {
         node.textContent = findValue(observable, property);
-      });
-    }
+    });
     // синхронизируем текст у node и уведомляем обработчик
     node.removeAttribute('d-text');
     node.removeAttribute('s-text');
@@ -409,14 +412,14 @@ const Dome = function (el = '', data = '') {
     if (nodeName == 'ul' || nodeName == 'ol') {
       nodeName = 'li';
     }
-    const childCount = value.length; // счётчик для единоразовой отрисовки
+    const childCount = value.length || Object.keys(value).length; // счётчик для единоразовой отрисовки
     node.childElementCount = 0;
     if (node.childElementCount < childCount) {
       // пока потомков меньше, чем нужно,
       // рисуем нового с данными из observable[lol][el]
       for (const el in value) {
         const li = document.createElement(nodeName);
-        if (nodename == 'div') {
+        if (nodeName == 'div') {
           li.innerHTML = inner;
         } else {
           li.innerHTML = text;
@@ -449,9 +452,8 @@ const Dome = function (el = '', data = '') {
     remove ? node.remove() : '';
     let specialIndexForSpecialClicks = 0;
     fors.forEach((item, node) => {
-      //   console.log(item);
+      item = {item};
       item.specialIndexForSpecialClicks = specialIndexForSpecialClicks++;
-      //   console.log(item);
       parseEL(node, item, observable);
     });
     specialIndexForSpecialClicks = 0;
@@ -496,14 +498,14 @@ const Dome = function (el = '', data = '') {
     if (nodeName == 'ul' || nodeName == 'ol') {
       nodeName = 'li';
     }
-    const childCount = value.length; // счётчик для единоразовой отрисовки
+    const childCount = value.length || Object.keys(value).length; // счётчик для единоразовой отрисовки
     node.childElementCount = 0;
     if (node.childElementCount < childCount) {
       // пока потомков меньше, чем нужно,
       // рисуем нового с данными из observable[lol][el]
       for (const el in value) {
         const li = document.createElement(nodeName);
-        if (nodename == 'div') {
+        if (nodeName == 'div') {
           li.innerHTML = inner;
         } else {
           li.innerHTML = text;
@@ -536,6 +538,7 @@ const Dome = function (el = '', data = '') {
     remove ? node.remove() : '';
     let specialIndexForSpecialClicks = 0;
     fors.forEach((item, node) => {
+      item = {item}
       defineProperty(item, 'specialIndexForSpecialClicks', {
         value: specialIndexForSpecialClicks++,
         configurable: true,
@@ -548,29 +551,33 @@ const Dome = function (el = '', data = '') {
         writable: true,
         enumerable: false,
       });
+      console.log(node, item, observable);
       parseEL(node, item, observable);
-    });
-    specialIndexForSpecialClicks = 0;
-    fors = timeFors;
-    node.removeAttribute('d-for');
+      });
+      specialIndexForSpecialClicks = 0;
+      fors = timeFors;
+      node.removeAttribute('d-for');
   }
 
   // внизу куча EventListener на свой атрибут
   function syncClicks(node, data, property, dForData) {
+    let args = extractArguments(property, data)
+    let f = property.slice(0, indexOf(property, "("))
     if (dForData) {
       node.addEventListener('click', () => {
-        dForData.methods[property].call(
+        dForData.methods[f].call(
           dForData,
           data.specialIndexForSpecialClicks,
         );
       });
-    } else {
-      if (startsWith$(property)) {
+    } else if (startsWith$(property)) {
         const event = property.slice(1, property.length);
         node.addEventListener('click', data.$methods[event]);
         return;
-      }
-      node.addEventListener('click', data.methods[property]);
+    } else {
+      node.addEventListener('click', () => {
+        data.methods[f].call(data, ...args);
+      });
     }
     node.removeAttribute('d-click');
   }
@@ -800,7 +807,6 @@ const Dome = function (el = '', data = '') {
       if (indexOne == 0) {
         if (indexTwo) {
           const value = text.slice(indexOne + 2, indexTwo).trim();
-
           if (index(value, '.')) {
             const prop = findValue(observable, value);
             mustaches[text] = node;
@@ -810,16 +816,13 @@ const Dome = function (el = '', data = '') {
             text = observable[value] + text.slice(indexTwo + 2, text.length);
           }
           node.innerHTML = text;
-          if (!signals[value]) {
             observe(value, () => {
-              signals[value];
               for (const variable in mustaches) {
                 if (mustaches[variable] == node) {
                   syncVM(node, observable, variable);
                 }
               }
             });
-          }
         }
         if (indexOf(node.innerHTML, '{{') > 0) {
           syncVM(node, observable);
@@ -839,7 +842,6 @@ const Dome = function (el = '', data = '') {
           }
           node.innerHTML = previousText + text;
 
-          if (!signals[value]) {
             observe(value, () => {
               for (const variable in mustaches) {
                 if (mustaches[variable] == node) {
@@ -847,7 +849,6 @@ const Dome = function (el = '', data = '') {
                 }
               }
             });
-          }
         }
         if (indexOf(node.innerHTML, '{{') > 0) {
           syncVM(node, observable);
@@ -1118,14 +1119,14 @@ const Dome = function (el = '', data = '') {
 
   function observe(property, signalHandler) {
     if (!signals[property]) signals[property] = [];
-    // Если для данного свойства нет сигнала,
+    // если для данного свойства нет сигнала,
     // мы создаем его и помещаем туда массив
     // для хранения обработчиков
     signals[property].push(signalHandler);
-    if (signals[property].length > 10) {
-      signals[property].splice(4, signals[property].length);
+    if (signals[property].length > 40) {
+      signals[property].splice(30, signals[property].length);
     }
-    // Помещаем обработчик signalHandler
+    // помещаем обработчик signalHandler
     // в массив сигналов, который фактически
     // является массивом функций обратного вызова
   }
@@ -1133,12 +1134,12 @@ const Dome = function (el = '', data = '') {
     if (!signals[signal] || signals[signal].length < 1) {
       return;
     }
-    // Выходим из функции, если нет
+    // выходим из функции, если нет
     // соответствующих обработчиков сигнала
     signals[signal].forEach((signalHandler, i) => {
       signalHandler();
     });
-    // Мы вызываем все обработчики, которые
+    // вызываем все обработчики, которые
     // следят за данным свойством
   }
   function makeReactive(obj, key, nodes) {
@@ -1169,11 +1170,9 @@ const Dome = function (el = '', data = '') {
           // из функции выбираем свойства, которые должны отслеживаться
           // и изменять computed свойство
           for (const el of set) {
-            //   if (!signals[el]) {
             observe(el, () => {
               notify(variable);
             });
-            //   }
           }
           return val[variable].call(obj);
         },
@@ -1203,6 +1202,24 @@ const Dome = function (el = '', data = '') {
       parseDOM(el, obj); // и парсим DOM в первый раз, отрисовывая
       // все реактивные свойства
     }
+  }
+  function extractArguments(property, data) {
+    let resArgs = [];
+    let startPoint = indexOf(property, "(");
+    if (startPoint != -1) {
+      let endPoint = indexOf(property, ")");
+      let newProps =  property.slice(startPoint + 1, endPoint).split(", ")
+      newProps.forEach((item) => {
+        if (index(item, "'") || index(item, '"')) {
+          resArgs.push(item)
+        } else if (!isNaN(+item)) {
+          resArgs.push(+item)
+        } else {
+          resArgs.push(findValue(data, item))
+        }
+      });
+    }
+    return resArgs;
   }
 
   let updateText = (property, e) => {
@@ -1402,4 +1419,4 @@ const Dome = function (el = '', data = '') {
   }, 1);
   // самовызываящаяся функция для убирания d-cloak
 };
-// Конец библиотеки
+// Конец самой библиотеки
