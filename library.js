@@ -1,21 +1,21 @@
-const isProxy = Symbol('isProxy');
-const isObserved = Symbol('isObserved');
-  const signals = {};
-  const mustaches = {};
-  let fors = new Map();
-  const customs = new Map();
-  const custom = {};
-  const forsMaps = new Map();
-  const observed = new Map();
-  const forsSignals = new Map();
-
 // Начало самой библиотеки
 const Dome = function (el = '', data = '') {
   if (data.beforeCreated) {
     data.beforeCreated();
   }
   // хук beforeCreated
-
+  const isProxy = Symbol('isProxy');
+  const isObserved = Symbol('isObserved');
+  let signals = {};
+  let mustaches = {};
+  let fors = new Map();
+  let customs = new Map();
+  let custom = {};
+  let forsMaps = new Map();
+  let observed = new Map();
+  let forsSignals = new Map();
+  let customsSignals = {};
+  let cache = {};
   const descriptor = {
     enumerable: false,
     writable: false,
@@ -49,7 +49,6 @@ const Dome = function (el = '', data = '') {
     const n = parseFloat(val);
     return isNaN(n) ? val : n;
   };
-
   const month = [
     'Январь',
     'Февраль',
@@ -75,13 +74,13 @@ const Dome = function (el = '', data = '') {
   ];
   // нужные константы.
 
-  this.nodes = [el];
+  this.node = el;
   defineProperty(this, 'el', {
     enumerable: false,
     writable: true,
     configurable: false,
   });
-  defineProperty(this, 'nodes', descriptor);
+  defineProperty(this, 'node', descriptor);
   function makeProxy(datas) {
     const validator = {
       get(target, key) {
@@ -117,6 +116,7 @@ const Dome = function (el = '', data = '') {
   }
   this.props = {};
   defineProperty(this, 'props', descriptor);
+  //this.data = this;
   this.data = makeProxy(data);
   // перезаписываем data, делая его прокси обьектом
 
@@ -237,26 +237,6 @@ const Dome = function (el = '', data = '') {
     };
     defineProperty(this, 'Time', descriptor);
     // показать время
-    /*
-        this.Invisibility = function () {
-          this.RemoveClass('showInLibrary');
-          this.Class('hideInLibrary');
-          setTimeout(() => {
-            this.el.style.display = 'none';
-          }, 701);
-          return this;
-        };
-        defineProperty(this, 'Invisibility', descriptor);
-        // скрыть элемент с анимацией
-        this.Visibility = function () {
-          this.RemoveClass('hideInLibrary');
-          this.Class('showInLibrary');
-          this.Show();
-          return this;
-        };
-        defineProperty(this, 'Visibility', descriptor);
-        // показать элемент с анимацией
-    */
     this.AddChild = function (el, text) {
       if (this.el.firstChild) {
         let timeEl = document.createElement(el);
@@ -296,6 +276,16 @@ const Dome = function (el = '', data = '') {
     this.nodes = null;
     this.customs = null;
     this.props = null;
+    signals = null;
+    mustaches = null;
+    fors = null;
+    customs = null;
+    custom = null;
+    forsMaps = null;
+    observed = null;
+    forsSignals = null;
+    customsSignals = null;
+
   };
   // удаление приложения
 
@@ -306,39 +296,138 @@ const Dome = function (el = '', data = '') {
 
   mixin(this.data.mixins, this.data, this); // в миксинах нет смысла(?)
   // начало реактивности
-  observeData(this.data, this.nodes, this);
+  observeData(this.data, this.node, this);
 
+  // Основные возможности приложения
   function syncNode(node, observable, property) {
     if (has(node, 'd-for')) {
       return;
     }
-    node.textContent = findValue(observable, property);
-    observe(findproperty(observable, property), () => {
+    node.textContent = cache[property] || findValue(observable, property);
+    observe(findProperty(observable, property), () => {
         node.textContent = findValue(observable, property);
     });
     // синхронизируем текст у node и уведомляем обработчик
     node.removeAttribute('d-text');
     node.removeAttribute('s-text');
   }
+  function syncValue(node, observable, property) {
+    if (has(node, 'd-for')) {
+      return;
+    }
+    node.value = cache[property] || findValue(observable, property);
+    // значение инпута
+    // равно значению property
+    node.addEventListener('input', () => {
+      observable[property] = node.value;
+    });
+    observe(findProperty(observable, property), () => {
+      node.value = findValue(observable, property);
+    });
+    // уведомляем обработчик
+    node.removeAttribute('d-text');
+    node.removeAttribute('s-text');
+  }
   function syncAsHtml(node, observable, property) {
-    node.innerHTML = findValue(observable, property);
+    if (has(node, 'd-for')) {
+      return;
+    }
+    node.innerHTML = cache[property] || findValue(observable, property);
     observe(
-      findproperty(observable, property),
+      findProperty(observable, property),
       () => (node.innerHTML = findValue(observable, property)),
     );
     // синхронизируем html у node и уведомляем обработчик
     node.removeAttribute('d-html');
   }
   function syncOnce(node, observable, property) {
-    node.textContent = findValue(observable, property);
+    if (has(node, 'd-for')) {
+      return;
+    }
+    node.textContent = cache[property] || findValue(observable, property);
     node.removeAttribute('d-once');
     // синхронизируем текст у node и удаляем атрибут
   }
+  function syncSelect(node, observable, property) {
+    if (has(node, 'd-for')) {
+      return;
+    }
+    observable[property] = node.value;
+    node.addEventListener('input', () => {
+      observable[property] = node.value; // привязываем input к property
+    });
+    observe(findProperty(observable, property), () => {
+      node.value = findValue(observable, property);
+    });
+  }
+  function syncVM(node, observable, inner, ifObserved) {
+    if (has(node, 'd-for')) {
+      return;
+    }
+    let text;
+    let nodeInner = node.innerHTML;
+    if (!mustaches[nodeInner] && !ifObserved) {
+      mustaches[nodeInner] = node;
+    }
+    inner ? (text = inner) : (text = node.innerHTML);
+    const indexOne = indexOf(text, '{{');
+    const indexTwo = indexOf(text, '}}');
+    if (!ifObserved) {
+      for (let value of VMnesting(text, "", observable)) {
+        observe(value, () => {
+              syncVM(node, observable, nodeInner, true);
+        });
+      }
+    }
+    if (indexOne != -1) {
+      if (indexOne == 0) {
+        if (indexTwo) {
+          const value = text.slice(indexOne + 2, indexTwo).trim();
+          if (index(value, '.')) {
+            const prop = findValue(observable, value);
+            text = prop + text.slice(indexTwo + 2, text.length);
+          } else {
+            text = observable[value] + text.slice(indexTwo + 2, text.length);
+          }
+          node.innerHTML = text;
+        }
+        if (indexOf(node.innerHTML, '{{') > 0) {
+          syncVM(node, observable, "", true);
+        }
+      } else {
+        if (indexTwo) {
+          const previousText = text.slice(0, indexOne);
+          let value = text.slice(indexOne + 2, indexTwo).trim();
+          if (index(value, '.')) {
+            value = findValue(observable, value);
+            text = value + text.slice(indexTwo + 2, text.length);
+          } else {
+            text = observable[value] + text.slice(indexTwo + 2, text.length);
+            node.innerHTML = previousText + text;
+          }
+        }
+        if (indexOf(node.innerHTML, '{{') > 0) {
+          syncVM(node, observable, "", true);
+        }
+      }
+    }
+  }
+  function ifHelper(node) {
+    if (node.nextElementSibling) {
+      if (has(node.nextElementSibling, 'd-else-if') || has(node.nextElementSibling, 'd-else')) {
+        node.nextElementSibling.style.display = 'none';
+        ifHelper(node.nextElementSibling)
+      }
+    }
+  }
   function ifNode(node, observable, property) {
+    if (has(node, 'd-for')) {
+      return;
+    }
     let value = property;
     let prop = property;
     if (index(property, '!')) {
-      prop = property.slice(1, property.length);
+      prop = findProperty(observable, property.slice(1, property.length));
       value = findValue(observable, prop);
       value = !value;
       prop = prop.slice(indexOf(prop, '.') + 1, prop.length);
@@ -346,7 +435,7 @@ const Dome = function (el = '', data = '') {
       value = findValue(observable, property);
     }
     if (!value) {
-      node.style.display = 'none';
+      node.style.display = 'none';;
       // если ложно - скрываем элемент и проверяем,
       // есть ли сосед с атрибутом d-else
       if (node.nextElementSibling) {
@@ -354,7 +443,7 @@ const Dome = function (el = '', data = '') {
           ifNode(
             node.nextElementSibling,
             observable,
-            node.nextElementSibling.attributes['d-else-if'].value,
+            node.nextElementSibling.attributes['d-else-if'].value
           );
         } else if (has(node.nextElementSibling, 'd-else')) {
           node.nextElementSibling.style.display = '';
@@ -365,15 +454,7 @@ const Dome = function (el = '', data = '') {
       // если такой есть - скрываем его
       node.style.display = '';
       if (node.nextElementSibling) {
-        if (has(node.nextElementSibling, 'd-else-if')) {
-          ifNode(
-            node.nextElementSibling,
-            observable,
-            node.nextElementSibling.attributes['d-else-if'].value,
-          );
-        } else if (has(node.nextElementSibling, 'd-else')) {
-          node.nextElementSibling.style.display = 'none';
-        }
+        ifHelper(node)
       }
     }
     if (!signals[prop]) {
@@ -383,29 +464,14 @@ const Dome = function (el = '', data = '') {
     }
   }
 
-  function syncValue(node, observable, property) {
-    node.value = findValue(observable, property);
-    // значение инпута
-    // равно значению property
-    node.addEventListener('input', () => {
-      updateText(property, node); // привязываем input к property
-    });
-    observe(findproperty(observable, property), () => {
-      node.value = findValue(observable, property);
-    });
-    // уведомляем обработчик
-    node.removeAttribute('d-text');
-    node.removeAttribute('s-text');
-  }
   function _anonimFor(node, observable, property, inner) {
     fors = new Map();
-    const lol = property.slice(property.lastIndexOf(' ') + 1, property.length);
+    const ourThis = property.slice(property.lastIndexOf(' ') + 1, property.length);
     let nodeName = node.nodeName.toLowerCase(); // узнаем имя node
-    const index = 0;
     let remove = false;
     const text = node.textContent;
     const timeFors = fors;
-    const value = findValue(observable, lol);
+    const value = findValue(observable, ourThis);
     fors.clear();
 
     node.innerHTML = '';
@@ -416,8 +482,8 @@ const Dome = function (el = '', data = '') {
     node.childElementCount = 0;
     if (node.childElementCount < childCount) {
       // пока потомков меньше, чем нужно,
-      // рисуем нового с данными из observable[lol][el]
-      for (const el in value) {
+      // рисуем нового с данными из observable[ourThis][el]
+      for (let el in value) {
         const li = document.createElement(nodeName);
         if (nodeName == 'div') {
           li.innerHTML = inner;
@@ -432,7 +498,7 @@ const Dome = function (el = '', data = '') {
         ) {
           remove = true;
           node.insertAdjacentElement('beforeBegin', li);
-          for (const variable of node.attributes) {
+          for (let variable of node.attributes) {
             if (variable.name != 'd-for') {
               li.setAttribute(variable.name, variable.value);
             }
@@ -440,7 +506,7 @@ const Dome = function (el = '', data = '') {
           fors.set(li, value[el]);
         } else {
           node.append(li);
-          for (const variable of node.attributes) {
+          for (let variable of node.attributes) {
             if (variable.name != 'd-for') {
               li.setAttribute(variable.name, variable.value);
             }
@@ -478,19 +544,19 @@ const Dome = function (el = '', data = '') {
         return true;
       },
     };
-    const lol = property.slice(property.lastIndexOf(' ') + 1, property.length);
+    const ourThis = property.slice(property.lastIndexOf(' ') + 1, property.length);
     let nodeName = node.nodeName.toLowerCase(); // узнаем имя node
     const index = 0;
     let remove = false;
     const text = node.textContent;
     let inner = node.innerHTML;
     const timeFors = fors;
-    const value = findValue(observable, lol);
-    if (!observable[lol][isObserved]) {
-      observe(lol, () => {
+    const value = findValue(observable, ourThis);
+    if (!observable[ourThis][isObserved]) {
+      observe(ourThis, () => {
         _anonimFor(node, observable, property, inner);
       });
-      observable[lol] = new Proxy(observable[lol], valid);
+      observable[ourThis] = new Proxy(observable[ourThis], valid);
     }
     fors.clear();
     // узнаем значение, которое требуется искать в data
@@ -502,7 +568,7 @@ const Dome = function (el = '', data = '') {
     node.childElementCount = 0;
     if (node.childElementCount < childCount) {
       // пока потомков меньше, чем нужно,
-      // рисуем нового с данными из observable[lol][el]
+      // рисуем нового с данными из observable[ourThis][el]
       for (const el in value) {
         const li = document.createElement(nodeName);
         if (nodeName == 'div') {
@@ -551,23 +617,21 @@ const Dome = function (el = '', data = '') {
         writable: true,
         enumerable: false,
       });
-      console.log(node, item, observable);
       parseEL(node, item, observable);
       });
       specialIndexForSpecialClicks = 0;
       fors = timeFors;
       node.removeAttribute('d-for');
   }
-
-  // внизу куча EventListener на свой атрибут
+  // Куча EventListener на свой атрибут
   function syncClicks(node, data, property, dForData) {
     let args = extractArguments(property, data)
     let f = property.slice(0, indexOf(property, "("))
     if (dForData) {
       node.addEventListener('click', () => {
         dForData.methods[f].call(
-          dForData,
-          data.specialIndexForSpecialClicks,
+          data.item,
+          ...args
         );
       });
     } else if (startsWith$(property)) {
@@ -580,6 +644,39 @@ const Dome = function (el = '', data = '') {
       });
     }
     node.removeAttribute('d-click');
+  }
+  function selfRender(node, observable, property) {
+    for (let variable in observable) {
+      if (property.startsWith(variable)) {
+        const ourThis = property.slice(
+          property.lastIndexOf(':') + 2,
+          property.length,
+        );
+        observable[variable] = ourThis;
+
+        node.textContent = observable[variable];
+        observe(property, () => (node.textContent = observable[variable]));
+      }
+    }
+  }
+  function syncBind(node, observable, property) {
+      const attrName = property.slice(0, indexOf(property, ':'));
+      let condition = property.slice(
+        indexOf(property, ':') + 2,
+        property.length,
+      );
+      condition = condition.split(", ")
+      condition = condition.reduce((a, b) => {
+        return `${findValue(observable, a)} ${findValue(observable, b)}`
+      })
+      node.setAttribute(attrName, condition);
+      condition.split(" ").forEach((item) => {
+        if (!signals[findProperty(observable, item)]) {
+          observe(findProperty(observable, item), () => {
+            syncBind(node, observable, property);
+          });
+        }
+      })
   }
   function syncDblclick(node, data, property) {
     if (startsWith$(property)) {
@@ -605,14 +702,6 @@ const Dome = function (el = '', data = '') {
       return;
     }
     node.addEventListener('mouseup', data.methods[property]);
-  }
-  function syncSelect(node, data, property) {
-    if (startsWith$(property)) {
-      const event = property.slice(1, property.length);
-      node.addEventListener('select', data.$methods[event]);
-      return;
-    }
-    node.addEventListener('select', data.methods[property]);
   }
   function syncMouseenter(node, data, property) {
     if (startsWith$(property)) {
@@ -694,76 +783,7 @@ const Dome = function (el = '', data = '') {
     }
     node.addEventListener('touchmove', data.methods[property]);
   }
-  function selfRender(node, observable, property) {
-    for (const variable in observable) {
-      if (property.startsWith(variable)) {
-        const lol = property.slice(
-          property.lastIndexOf(':') + 2,
-          property.length,
-        );
-        observable[variable] = lol;
-
-        node.textContent = observable[variable];
-        observe(property, () => (node.textContent = observable[variable]));
-      }
-    }
-  }
-  function syncInpt(node, observable, property) {
-    if (startsWith$(property)) {
-      const event = property.slice(1, property.length);
-      node.addEventListener('input', observable.$methods[event]);
-      return;
-    }
-    node.addEventListener('input', observable.methods[property]);
-  }
-  function syncBind(node, observable, property) {
-    if (property.startsWith(':')) {
-      let prop = property.slice(1, property.length);
-      const attrName = prop.slice(0, indexOf(prop, '='));
-      const attrValue = prop.slice(
-        indexOf(prop, '=') + 2,
-        indexOf(prop, ':') - 1,
-      );
-      let condition = prop.slice(indexOf(prop, ':') + 2, prop.length);
-      if (index(prop, ', ')) {
-        condition = prop.slice(indexOf(prop, ':') + 2, indexOf(prop, ', '));
-        prop = prop.slice(indexOf(prop, ', ') + 2, prop.length);
-        syncBind(node, observable, prop);
-      }
-      if (findValue(observable, condition)) {
-        node.setAttribute(attrName, attrValue);
-        if (!signals[findproperty(observable, condition)]) {
-          observe(findproperty(observable, condition), () => {
-            syncBind(node, observable, property);
-          });
-        }
-      }
-    } else {
-      const attrName = property.slice(0, indexOf(property, ':'));
-      let condition = property.slice(
-        indexOf(property, ':') + 2,
-        property.length,
-      );
-      if (index(property, ', ')) {
-        condition = property.slice(
-          indexOf(property, ':') + 2,
-          indexOf(property, ', '),
-        );
-        prop = property.slice(indexOf(property, ', ') + 2, property.length);
-        syncBind(node, observable, prop);
-      }
-      node.setAttribute(attrName, findValue(observable, condition));
-      if (!signals[findproperty(observable, condition)]) {
-        observe(findproperty(observable, condition), () => {
-          syncBind(node, observable, property);
-        });
-      }
-    }
-  }
-  function syncSpecialClicks(node, data, property, observable) {
-    +syncClicks(node, data, property, observable);
-  }
-  // для массива из точенной нотации
+  // Вспомогательные методы
   function nesting(value, observable, set) {
     const start = indexOf(value, 'this.');
     const slice = value.slice(start + 5, value.length);
@@ -773,10 +793,28 @@ const Dome = function (el = '', data = '') {
     index(end, '\n') ? (end = end.slice(0, gap - 1)) : false;
     index(end, '}') ? (end = end.slice(0, indexOf(end, '}'))) : false;
     index(end, ';') ? (end = end.slice(0, indexOf(end, ';'))) : false;
+    index(end, '**') ? (end = end.slice(0, indexOf(end, '**'))) : false;
+    index(end, '*') ? (end = end.slice(0, indexOf(end, '**'))) : false;
     set.add(end);
     if (index(slice, 'this.')) {
       nesting(slice, observable, set);
     }
+  }
+  function VMnesting(text, observed, observable) {
+    let result
+    observed ? result = observed : result = [];
+    let start = indexOf(text, "{{")
+    let end = indexOf(text, "}}")
+    let str = text.slice(start + 2, end)
+    if (indexOf(str, ".") != -1) {
+      str = findProperty(observable, str)
+    }
+    result.push(str)
+    text = text.slice(end + 2, text.length)
+    if (indexOf(text, "{{") != -1) {
+      return VMnesting(text, result)
+    }
+    return result;
   }
   function findValue(observable, value) {
     if (index(value, '.')) {
@@ -784,93 +822,40 @@ const Dome = function (el = '', data = '') {
       const nextValue = value.slice(indexOf(value, '.') + 1, value.length);
       return findValue(observable[obj], nextValue);
     }
+    cache[value] = observable[value];
     return observable[value];
   }
-  function findproperty(observable, value) {
+  function findProperty(observable, value) {
     if (index(value, '.')) {
-      const obj = value.slice(0, indexOf(value, '.'));
-      const nextValue = value.slice(indexOf(value, '.') + 1, value.length);
-      return findproperty(observable[obj], nextValue);
+      const obj = value.slice(value.lastIndexOf(".") + 1, value.length);
+      return obj;
     }
     return value;
   }
-  // IDEA: СДЕЛАТЬ МУСТАЧЕСЫ МАПОМ ЧТОБЫ КЛЮЧИ В ВИДЕ {{ИМЯ}} НЕ ПУТАЛИСЬ И ЦИКЛ ВЫВОДИЛСЯ НОРМАЛЬНО
-  function syncVM(node, observable, inner) {
-    if (has(node, 'd-for')) {
-      return;
+  function extractArguments(property, data) {
+    let resArgs = [];
+    let startPoint = indexOf(property, "(");
+    if (startPoint != -1) {
+      let endPoint = indexOf(property, ")");
+      let newProps =  property.slice(startPoint + 1, endPoint).split(", ")
+      newProps.forEach((item) => {
+        if (index(item, "'") || index(item, '"')) {
+          resArgs.push(item)
+        } else if (!isNaN(+item)) {
+          resArgs.push(+item)
+        } else {
+          resArgs.push(findValue(data, item))
+        }
+      });
     }
-    let text;
-    inner ? (text = inner) : (text = node.innerHTML);
-    const indexOne = indexOf(text, '{{');
-    const indexTwo = indexOf(text, '}}');
-    if (indexOne != -1) {
-      if (indexOne == 0) {
-        if (indexTwo) {
-          const value = text.slice(indexOne + 2, indexTwo).trim();
-          if (index(value, '.')) {
-            const prop = findValue(observable, value);
-            mustaches[text] = node;
-            text = prop + text.slice(indexTwo + 2, text.length);
-          } else {
-            mustaches[text] = node;
-            text = observable[value] + text.slice(indexTwo + 2, text.length);
-          }
-          node.innerHTML = text;
-            observe(value, () => {
-              for (const variable in mustaches) {
-                if (mustaches[variable] == node) {
-                  syncVM(node, observable, variable);
-                }
-              }
-            });
-        }
-        if (indexOf(node.innerHTML, '{{') > 0) {
-          syncVM(node, observable);
-        }
-      } else {
-        if (indexTwo) {
-          const previousText = text.slice(0, indexOne);
-          let value = text.slice(indexOne + 2, indexTwo).trim();
-
-          if (index(value, '.')) {
-            value = findValue(observable, value);
-            text = value + text.slice(indexTwo + 2, text.length);
-            mustaches[text] = node;
-          } else {
-            text = observable[value] + text.slice(indexTwo + 2, text.length);
-            mustaches[text] = node;
-          }
-          node.innerHTML = previousText + text;
-
-            observe(value, () => {
-              for (const variable in mustaches) {
-                if (mustaches[variable] == node) {
-                  syncVM(node, observable, variable);
-                }
-              }
-            });
-        }
-        if (indexOf(node.innerHTML, '{{') > 0) {
-          syncVM(node, observable);
-        }
-      }
-    }
+    return resArgs;
   }
-  function syncSelect(node, observable, property) {
-    observable[property] = node.value;
-    node.addEventListener('input', () => {
-      observable[property] = node.value; // привязываем input к property
-    });
-    observe(findproperty(observable, property), () => {
-      node.value = findValue(observable, property);
-    });
-  }
-
+  // Парсы
   function parseEL(node, observable, data) {
     if (index(node.innerHTML, '{{')) {
       syncVM(node, observable);
     }
-    if (node.nodeName != 'DIV' && node.nodeName != 'LI') {
+    if (node.children == 0) {
       if (has(node, 'd-bind')) {
         syncBind(node, observable, node.attributes['d-bind'].value);
       }
@@ -887,23 +872,19 @@ const Dome = function (el = '', data = '') {
       if (has(node, 'd-html')) {
         syncAsHtml(node, observable, node.attributes['d-html'].value);
       }
-      if (has(node, 'd-class')) {
-        syncClass(node, observable, node.attributes['d-class'].value);
-      }
       if (has(node, 'd-click')) {
-        syncSpecialClicks(node, observable, node.attributes['d-click'].value);
+        syncClicks(node, observable, node.attributes['d-click'].value);
       }
       if (has(node, 'd-model')) {
-        syncSpecialClicks(node, observable, node.attributes['d-model'].value);
+        syncClicks(node, observable, node.attributes['d-model'].value);
       }
     } else {
-      const random = 'd-for-class';
+      let random = 'd-for-class';
       node.classList.add(random);
 
       const asHtml = qsa(`.${random} [d-html]`);
       once = qsa(`.${random} [d-once]`);
       nodes = qsa(`.${random} [d-text]`);
-      classes = qsa(`.${random} [d-class]`);
       ifs = qsa(`.${random} [d-if]`);
       bind = qsa(`.${random} [d-bind]`);
       clicks = qsa(`.${random} [d-click]`);
@@ -922,9 +903,6 @@ const Dome = function (el = '', data = '') {
           syncSelect(node, observable, node.attributes['d-model'].value);
         }
       });
-      classes.forEach((bind) => {
-        syncClass(bind, observable, bind.attributes['d-class'].value);
-      });
       nodes.forEach((node) => {
         if (node.hasAttribute('value')) {
           syncValue(node, observable, node.attributes['d-text'].value);
@@ -939,7 +917,7 @@ const Dome = function (el = '', data = '') {
         syncAsHtml(item, observable, item.attributes['d-html'].value);
       });
       clicks.forEach((item) => {
-        syncSpecialClicks(
+        syncClicks(
           item,
           observable,
           item.attributes['d-click'].value,
@@ -965,7 +943,6 @@ const Dome = function (el = '', data = '') {
       }
     }
   }
-  // сделать парс по нодтайпу или по наличию потомков
   function parseDOM(node, observable) {
     // парс DOM, ищем все атрибуты в node
     const bind = qsa(`${node} [d-bind]`);
@@ -996,7 +973,6 @@ const Dome = function (el = '', data = '') {
     touchend = qsa(`${node} [d-touchend]`);
     touchmove = qsa(`${node} [d-touchmove]`);
     selfRendering = qsa(`${node} [self]`);
-    inpt = qsa(`${node} [d-input]`);
     vm = qsa(`${node} :not(input, button)`);
     clicks = qsa(`${node} [d-click]`);
     model = qsa(`${node} [d-model]`);
@@ -1015,9 +991,6 @@ const Dome = function (el = '', data = '') {
       if (node.nodeName == 'SELECT') {
         syncSelect(node, observable, node.attributes['d-model'].value);
       }
-    });
-    inpt.forEach((item) => {
-      syncInpt(item, observable, item.attributes['d-input'].value);
     });
     selfRendering.forEach((item) => {
       selfRender(item, observable, item.attributes.self.value);
@@ -1087,7 +1060,7 @@ const Dome = function (el = '', data = '') {
       syncTouchmove(click, observable, click.attributes['d-touchmove'].value);
     });
   }
-  const parseLocalDOM = (node, observable, count) => {
+  function parseLocalDOM (node, observable, count) {
     const asHtml = qsa(`${node} [s-html]`);
     once = qsa(`${node} [s-once]`);
     nodes = qsa(`${node} [s-text]`);
@@ -1116,8 +1089,15 @@ const Dome = function (el = '', data = '') {
       }
     });
   };
-
-  function observe(property, signalHandler) {
+  // Реактивность
+  function observe(property, signalHandler, isCustom) {
+    if (isCustom) {
+      if (!customsSignals[property]) {
+        customsSignals[property] = [];
+      }
+      customsSignals[property].push(signalHandler);
+      return
+    }
     if (!signals[property]) signals[property] = [];
     // если для данного свойства нет сигнала,
     // мы создаем его и помещаем туда массив
@@ -1132,7 +1112,19 @@ const Dome = function (el = '', data = '') {
   }
   function notify(signal) {
     if (!signals[signal] || signals[signal].length < 1) {
+      if (!customsSignals[signal] || customsSignals[signal].length < 1) {
+        return
+      } else {
+        customsSignals[signal].forEach((signalHandler, i) => {
+          signalHandler();
+        });
+      }
       return;
+    }
+    if (!(!customsSignals[signal] || customsSignals[signal].length < 1)) {
+      customsSignals[signal].forEach((signalHandler, i) => {
+        signalHandler();
+      });
     }
     // выходим из функции, если нет
     // соответствующих обработчиков сигнала
@@ -1142,38 +1134,26 @@ const Dome = function (el = '', data = '') {
     // вызываем все обработчики, которые
     // следят за данным свойством
   }
-  function makeReactive(obj, key, nodes) {
-    let val = obj[key];
-    // реактивность, устанавливаем геттеры и сеттеры
-    defineProperty(obj, key, {
-      get() {
-        return val;
-      },
-      set(newVal) {
-        val = newVal;
-        notify(key);
-        for (const variable in obj.computed) {
-          obj.computed[variable].bind(obj);
-        }
-        // добавляем обработчик
-      },
-    });
-  }
   function makeComputed(obj, key, customs) {
     const val = obj[key];
     const set = new Set();
     // Set не пропустит повторяющиеся значения, выходящие из функции nesting
     for (const variable in val) {
+      nesting(val[variable].toString(), obj, set);
+      // из функции выбираем свойства, которые должны отслеживаться
+      // и изменять computed свойство
+      for (const el of set) {
+        if (isArray(obj[el])) {
+          observe("length", () => {
+            notify(variable)
+          })
+        }
+        observe(el, () => {
+          notify(variable); // уведомления конкретно для вычисляемых, не удалять
+        });
+      }
       defineProperty(obj, variable, {
         get() {
-          nesting(val[variable].toString(), obj, set);
-          // из функции выбираем свойства, которые должны отслеживаться
-          // и изменять computed свойство
-          for (const el of set) {
-            observe(el, () => {
-              notify(variable);
-            });
-          }
           return val[variable].call(obj);
         },
         set() {},
@@ -1186,46 +1166,27 @@ const Dome = function (el = '', data = '') {
       });
     }
   }
-  function observeData(obj, nodes, customs) {
+  function observeData(obj, node, customs) {
     for (const key in obj) {
       if (obj.hasOwnProperty(key)) {
         if (key == 'computed') {
           makeComputed(obj, key, customs);
-        } else {
-          makeReactive(obj, key, nodes);
+        } else if (key == "customs") {
+          parseCustoms(node, obj, obj[key])
         }
         // каждому свойству data добавляем реактивность
       }
     }
-
-    for (const el of nodes) {
-      parseDOM(el, obj); // и парсим DOM в первый раз, отрисовывая
-      // все реактивные свойства
-    }
-  }
-  function extractArguments(property, data) {
-    let resArgs = [];
-    let startPoint = indexOf(property, "(");
-    if (startPoint != -1) {
-      let endPoint = indexOf(property, ")");
-      let newProps =  property.slice(startPoint + 1, endPoint).split(", ")
-      newProps.forEach((item) => {
-        if (index(item, "'") || index(item, '"')) {
-          resArgs.push(item)
-        } else if (!isNaN(+item)) {
-          resArgs.push(+item)
-        } else {
-          resArgs.push(findValue(data, item))
-        }
-      });
-    }
-    return resArgs;
+    parseDOM(node, obj); // и парсим DOM в первый раз, отрисовывая
+                         // все реактивные свойства
   }
 
-  let updateText = (property, e) => {
-    eval(`this.data.${property} = e.value;`);
-  };
+  if (this.data.reactive) {
+    this.data.reactive();
+  }
+  // хук реактивности, реактивность готова
 
+  // Методы для кастом компонентов
   function syncLocalValue(node, observable, property) {
     node.value = findValue(observable, property);
     node.addEventListener('input', () => {
@@ -1237,7 +1198,6 @@ const Dome = function (el = '', data = '') {
     node.addEventListener('click', datas.methods[property].bind(datas));
     node.removeAttribute('s-click');
   }
-
   function observeLocalData(obj, nodes, customs) {
     for (const key in obj) {
       if (obj.hasOwnProperty(key)) {
@@ -1252,12 +1212,43 @@ const Dome = function (el = '', data = '') {
 
     parseLocalDOM(nodes, obj);
   }
+  function parseCustoms(node, observable, property) {
+    for (let custom in property) {
+      let customData = property[custom];
+      let template = customData.template;
+      if (customData.props) {
+        for (let prop of customData.props) {
+          customData[prop] = observable[prop];
+          observe(prop, () => {
+            customData[prop] = observable[prop]
+        }, true)
+        }
+      }
+      if (customData.methods) {
+        for (let method in customData.methods) {
+          observable.$methods = customData.methods[method];
+        }
+      }
 
-  if (this.data.reactive) {
-    this.data.reactive();
+      class customConstructor extends HTMLElement {
+        constructor() {
+          super();
+          this.name = custom;
+          this.data = customData;
+          this.data.el = qs(this.name);
+          this.data = makeProxy(this.data);
+        }
+
+        connectedCallback() {
+          this.innerHTML = template;
+          customs.set(this, customData);
+          observeLocalData(this.data, this.name, this);
+          parseLocalDOM(this.name, this.data);
+        }
+      }
+      customElements.define(custom, customConstructor);
+    }
   }
-  // хук реактивности, реактивность готова
-  let customCount = 0;
   this.custom = function (name, datas) {
     const { template } = datas;
     const propsData = {};
@@ -1328,6 +1319,8 @@ const Dome = function (el = '', data = '') {
   };
   defineProperty(this, 'custom', descriptor);
   // метод для компонентов
+
+  // Миксины - отдельный столп бесполезности
   function mixin(obj, obj2, parent) {
     if (isArray(obj)) {
       for (const variable of obj) {
