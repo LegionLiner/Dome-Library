@@ -4,10 +4,10 @@ const Dome = function (el = '', data = '') {
     data.beforeCreated();
   }
   // хук beforeCreated
+
   const isProxy = Symbol('isProxy');
   const isObserved = Symbol('isObserved');
   let signals = {};
-  let mustaches = {};
   let fors = new Map();
   let customs = new Map();
   let custom = {};
@@ -36,7 +36,6 @@ const Dome = function (el = '', data = '') {
   const has = (node, val) => node.hasAttribute(val);
   const index = (val, str) => val.indexOf(str) != -1;
   const indexOf = (val, str) => val.indexOf(str);
-  const startsWith$ = (val) => val.startsWith('$');
   const isBoolean = (val) => {
     const isTrue = val == true;
     const isFalse = val == false;
@@ -366,9 +365,6 @@ const Dome = function (el = '', data = '') {
     }
     let text;
     let nodeInner = node.innerHTML;
-    if (!mustaches[nodeInner] && !ifObserved) {
-      mustaches[nodeInner] = node;
-    }
     inner ? (text = inner) : (text = node.innerHTML);
     const indexOne = indexOf(text, '{{');
     const indexTwo = indexOf(text, '}}');
@@ -403,8 +399,8 @@ const Dome = function (el = '', data = '') {
             text = value + text.slice(indexTwo + 2, text.length);
           } else {
             text = observable[value] + text.slice(indexTwo + 2, text.length);
-            node.innerHTML = previousText + text;
           }
+          node.innerHTML = previousText + text;
         }
         if (indexOf(node.innerHTML, '{{') > 0) {
           syncVM(node, observable, "", true);
@@ -412,6 +408,7 @@ const Dome = function (el = '', data = '') {
       }
     }
   }
+
   function ifHelper(node) {
     if (node.nextElementSibling) {
       if (has(node.nextElementSibling, 'd-else-if') || has(node.nextElementSibling, 'd-else')) {
@@ -463,15 +460,15 @@ const Dome = function (el = '', data = '') {
       });
     }
   }
-
   function _anonimFor(node, observable, property, inner) {
     fors = new Map();
-    const ourThis = property.slice(property.lastIndexOf(' ') + 1, property.length);
+    const lol = property.slice(property.lastIndexOf(' ') + 1, property.length);
     let nodeName = node.nodeName.toLowerCase(); // узнаем имя node
+    const index = 0;
     let remove = false;
     const text = node.textContent;
     const timeFors = fors;
-    const value = findValue(observable, ourThis);
+    const value = findValue(observable, lol);
     fors.clear();
 
     node.innerHTML = '';
@@ -482,8 +479,8 @@ const Dome = function (el = '', data = '') {
     node.childElementCount = 0;
     if (node.childElementCount < childCount) {
       // пока потомков меньше, чем нужно,
-      // рисуем нового с данными из observable[ourThis][el]
-      for (let el in value) {
+      // рисуем нового с данными из observable[lol][el]
+      for (const el in value) {
         const li = document.createElement(nodeName);
         if (nodeName == 'div') {
           li.innerHTML = inner;
@@ -498,7 +495,7 @@ const Dome = function (el = '', data = '') {
         ) {
           remove = true;
           node.insertAdjacentElement('beforeBegin', li);
-          for (let variable of node.attributes) {
+          for (const variable of node.attributes) {
             if (variable.name != 'd-for') {
               li.setAttribute(variable.name, variable.value);
             }
@@ -506,7 +503,7 @@ const Dome = function (el = '', data = '') {
           fors.set(li, value[el]);
         } else {
           node.append(li);
-          for (let variable of node.attributes) {
+          for (const variable of node.attributes) {
             if (variable.name != 'd-for') {
               li.setAttribute(variable.name, variable.value);
             }
@@ -544,19 +541,19 @@ const Dome = function (el = '', data = '') {
         return true;
       },
     };
-    const ourThis = property.slice(property.lastIndexOf(' ') + 1, property.length);
+    const lol = property.slice(property.lastIndexOf(' ') + 1, property.length);
     let nodeName = node.nodeName.toLowerCase(); // узнаем имя node
     const index = 0;
     let remove = false;
     const text = node.textContent;
     let inner = node.innerHTML;
     const timeFors = fors;
-    const value = findValue(observable, ourThis);
-    if (!observable[ourThis][isObserved]) {
-      observe(ourThis, () => {
+    const value = findValue(observable, lol);
+    if (!observable[lol][isObserved]) {
+      observe(lol, () => {
         _anonimFor(node, observable, property, inner);
       });
-      observable[ourThis] = new Proxy(observable[ourThis], valid);
+      observable[lol] = new Proxy(observable[lol], valid);
     }
     fors.clear();
     // узнаем значение, которое требуется искать в data
@@ -568,7 +565,7 @@ const Dome = function (el = '', data = '') {
     node.childElementCount = 0;
     if (node.childElementCount < childCount) {
       // пока потомков меньше, чем нужно,
-      // рисуем нового с данными из observable[ourThis][el]
+      // рисуем нового с данными из observable[lol][el]
       for (const el in value) {
         const li = document.createElement(nodeName);
         if (nodeName == 'div') {
@@ -623,36 +620,65 @@ const Dome = function (el = '', data = '') {
       fors = timeFors;
       node.removeAttribute('d-for');
   }
-  // Куча EventListener на свой атрибут
+
+  function clicksHelper(property) {
+    property = property.slice(0, indexOf(property, ":"));
+    let e = property;
+    let c = null;
+    if (index(property, ".")) {
+      let e = property.split(".")[0]
+      c = property.split(".")[1]
+      return { e, c };
+    } else {
+      return { e, c };
+    }
+  }
   function syncClicks(node, data, property, dForData) {
+    let hooks
+    if (index(property, ":")) {
+      hooks = clicksHelper(property)
+      property = property.slice(indexOf(property, ":") + 2, property.length)
+    }
     let args = extractArguments(property, data)
     let f = property.slice(0, indexOf(property, "("))
+
     if (dForData) {
-      node.addEventListener('click', () => {
-        dForData.methods[f].call(
-          data.item,
-          ...args
-        );
+      node.addEventListener(hooks.e, (event) => {
+        if (hooks.c) {
+          if (event.key.toLowerCase() == hooks.c) {
+            dForData.methods[f].call(
+              data.item,
+              ...args
+            );
+          }
+        } else {
+          dForData.methods[f].call(
+            data.item,
+            ...args
+          );
+        }
       });
-    } else if (startsWith$(property)) {
-        const event = property.slice(1, property.length);
-        node.addEventListener('click', data.$methods[event]);
-        return;
     } else {
-      node.addEventListener('click', () => {
-        data.methods[f].call(data, ...args);
+      node.addEventListener(hooks.e, (event) => {
+        if (hooks.c) {
+          if (event.key.toLowerCase() == hooks.c) {
+            data.methods[f].call(data, ...args);
+          }
+        } else {
+          data.methods[f].call(data, ...args);
+        }
       });
     }
-    node.removeAttribute('d-click');
+    node.removeAttribute('d-on');
   }
   function selfRender(node, observable, property) {
     for (let variable in observable) {
       if (property.startsWith(variable)) {
-        const ourThis = property.slice(
+        const lol = property.slice(
           property.lastIndexOf(':') + 2,
           property.length,
         );
-        observable[variable] = ourThis;
+        observable[variable] = lol;
 
         node.textContent = observable[variable];
         observe(property, () => (node.textContent = observable[variable]));
@@ -677,111 +703,6 @@ const Dome = function (el = '', data = '') {
           });
         }
       })
-  }
-  function syncDblclick(node, data, property) {
-    if (startsWith$(property)) {
-      const event = property.slice(1, property.length);
-      node.addEventListener('dblclick', data.$methods[event]);
-      return;
-    }
-    node.addEventListener('dblclick', data.methods[property]);
-    node.removeAttribute('d-dblclick');
-  }
-  function syncMousedown(node, data, property) {
-    if (startsWith$(property)) {
-      const event = property.slice(1, property.length);
-      node.addEventListener('mousedown', data.$methods[event]);
-      return;
-    }
-    node.addEventListener('mousedown', data.methods[property]);
-  }
-  function syncMouseup(node, data, property) {
-    if (startsWith$(property)) {
-      const event = property.slice(1, property.length);
-      node.addEventListener('mouseup', data.$methods[event]);
-      return;
-    }
-    node.addEventListener('mouseup', data.methods[property]);
-  }
-  function syncMouseenter(node, data, property) {
-    if (startsWith$(property)) {
-      const event = property.slice(1, property.length);
-      node.addEventListener('mouseenter', data.$methods[event]);
-      return;
-    }
-    node.addEventListener('mouseenter', data.methods[property]);
-  }
-  function syncmMuseleave(node, data, property) {
-    if (startsWith$(property)) {
-      const event = property.slice(1, property.length);
-      node.addEventListener('mouseleave', data.$methods[event]);
-      return;
-    }
-    node.addEventListener('mouseleave', data.methods[property]);
-  }
-  function syncMousemove(node, data, property) {
-    if (startsWith$(property)) {
-      const event = property.slice(1, property.length);
-      node.addEventListener('mousemove', data.$methods[event]);
-      return;
-    }
-    node.addEventListener('mousemove', data.methods[property]);
-  }
-  function syncMouseover(node, data, property) {
-    if (startsWith$(property)) {
-      const event = property.slice(1, property.length);
-      node.addEventListener('mouseover', data.$methods[event]);
-      return;
-    }
-    node.addEventListener('mouseover', data.methods[property]);
-  }
-  function syncDrag(node, data, property) {
-    if (startsWith$(property)) {
-      const event = property.slice(1, property.length);
-      node.addEventListener('drag', data.$methods[event]);
-      return;
-    }
-    node.addEventListener('drag', data.methods[property]);
-  }
-  function syncDrop(node, data, property) {
-    if (startsWith$(property)) {
-      const event = property.slice(1, property.length);
-      node.addEventListener('drop', data.$methods[event]);
-      return;
-    }
-    node.addEventListener('drop', data.methods[property]);
-  }
-  function syncTouchcancel(node, data, property) {
-    if (startsWith$(property)) {
-      const event = property.slice(1, property.length);
-      node.addEventListener('touchcancel', data.$methods[event]);
-      return;
-    }
-    node.addEventListener('touchcancel', data.methods[property]);
-  }
-  function syncTouchstart(node, data, property) {
-    if (startsWith$(property)) {
-      const event = property.slice(1, property.length);
-      node.addEventListener('touchstart', data.$methods[event]);
-      return;
-    }
-    node.addEventListener('touchstart', data.methods[property]);
-  }
-  function syncTouchend(node, data, property) {
-    if (startsWith$(property)) {
-      const event = property.slice(1, property.length);
-      node.addEventListener('touchend', data.$methods[event]);
-      return;
-    }
-    node.addEventListener('touchend', data.methods[property]);
-  }
-  function syncTouchmove(node, data, property) {
-    if (startsWith$(property)) {
-      const event = property.slice(1, property.length);
-      node.addEventListener('touchmove', data.$methods[event]);
-      return;
-    }
-    node.addEventListener('touchmove', data.methods[property]);
   }
   // Вспомогательные методы
   function nesting(value, observable, set) {
@@ -872,8 +793,8 @@ const Dome = function (el = '', data = '') {
       if (has(node, 'd-html')) {
         syncAsHtml(node, observable, node.attributes['d-html'].value);
       }
-      if (has(node, 'd-click')) {
-        syncClicks(node, observable, node.attributes['d-click'].value);
+      if (has(node, 'd-on')) {
+        syncClicks(node, observable, node.attributes['d-on'].value);
       }
       if (has(node, 'd-model')) {
         syncClicks(node, observable, node.attributes['d-model'].value);
@@ -887,7 +808,7 @@ const Dome = function (el = '', data = '') {
       nodes = qsa(`.${random} [d-text]`);
       ifs = qsa(`.${random} [d-if]`);
       bind = qsa(`.${random} [d-bind]`);
-      clicks = qsa(`.${random} [d-click]`);
+      clicks = qsa(`.${random} [d-on]`);
       model = qsa(`${random} [d-model]`);
 
       node.classList.remove(random);
@@ -920,10 +841,10 @@ const Dome = function (el = '', data = '') {
         syncClicks(
           item,
           observable,
-          item.attributes['d-click'].value,
+          item.attributes['d-on'].value,
           data,
         );
-        item.removeAttribute('d-click');
+        item.removeAttribute('d-on');
       });
     }
     if (!observed.has(observable.constIndex)) {
@@ -958,23 +879,9 @@ const Dome = function (el = '', data = '') {
     once = qsa(`${node} [d-once]`);
     nodes = qsa(`${node} [d-text]`);
     ifs = qsa(`${node} [d-if]`);
-    dblclick = qsa(`${node} [d-dblclick]`);
-    mousedown = qsa(`${node} [d-mousedown]`);
-    mouseup = qsa(`${node} [d-mouseup]`);
     select = qsa(`${node} [d-select]`);
-    mouseenter = qsa(`${node} [d-mouseenter]`);
-    mouseleave = qsa(`${node} [d-mouseleave]`);
-    mousemove = qsa(`${node} [d-mousemove]`);
-    mouseover = qsa(`${node} [d-mouseover]`);
-    drag = qsa(`${node} [d-drag]`);
-    drop = qsa(`${node} [d-drop]`);
-    touchstart = qsa(`${node} [d-touchstart]`);
-    touchcancel = qsa(`${node} [d-touchcancel]`);
-    touchend = qsa(`${node} [d-touchend]`);
-    touchmove = qsa(`${node} [d-touchmove]`);
     selfRendering = qsa(`${node} [self]`);
     vm = qsa(`${node} :not(input, button)`);
-    clicks = qsa(`${node} [d-click]`);
     model = qsa(`${node} [d-model]`);
 
     // для кадого найденного элемента с атрибутом x вызываем функцию,
@@ -1009,63 +916,21 @@ const Dome = function (el = '', data = '') {
         syncVM(item, observable);
       }
     });
-    clicks = qsa(`${node} [d-click]`);
+    clicks = qsa(`${node} [d-on]`);
     clicks.forEach((click) => {
-      syncClicks(click, observable, click.attributes['d-click'].value);
+      syncClicks(click, observable, click.attributes['d-on'].value);
     });
-    dblclick.forEach((click) => {
-      syncDblclick(click, observable, click.attributes['d-dblclick'].value);
+    select.forEach((item) => {
+      syncSelect(item, observable, item.attributes['d-select'].value);
     });
-    mousedown.forEach((click) => {
-      syncMousedown(click, observable, click.attributes['d-mousedown'].value);
-    });
-    mouseup.forEach((click) => {
-      syncMouseup(click, observable, click.attributes['d-mouseup'].value);
-    });
-    select.forEach((click) => {
-      syncSelect(click, observable, click.attributes['d-select'].value);
-    });
-    mouseenter.forEach((click) => {
-      syncMouseenter(click, observable, click.attributes['d-mouseenter'].value);
-    });
-    mouseleave.forEach((click) => {
-      syncmMuseleave(click, observable, click.attributes['d-mouseleave'].value);
-    });
-    mousemove.forEach((click) => {
-      syncMousemove(click, observable, click.attributes['d-mousemove'].value);
-    });
-    mouseover.forEach((click) => {
-      syncMouseover(click, observable, click.attributes['d-mouseover'].value);
-    });
-    drag.forEach((click) => {
-      syncDrag(click, observable, click.attributes['d-drag'].value);
-    });
-    drop.forEach((click) => {
-      syncDrop(click, observable, click.attributes['d-drop'].value);
-    });
-    touchcancel.forEach((click) => {
-      syncTouchcancel(
-        click,
-        observable,
-        click.attributes['d-touchcancel'].value,
-      );
-    });
-    touchstart.forEach((click) => {
-      syncTouchstart(click, observable, click.attributes['d-touchstart'].value);
-    });
-    touchend.forEach((click) => {
-      syncTouchend(click, observable, click.attributes['d-touchend'].value);
-    });
-    touchmove.forEach((click) => {
-      syncTouchmove(click, observable, click.attributes['d-touchmove'].value);
-    });
+
   }
   function parseLocalDOM (node, observable, count) {
     const asHtml = qsa(`${node} [s-html]`);
     once = qsa(`${node} [s-once]`);
     nodes = qsa(`${node} [s-text]`);
     classes = qsa(`${node} [s-class]`);
-    clicks = qsa(`${node} [s-click]`);
+    clicks = qsa(`${node} [s-on]`);
     dFor = qsa(`${node} [s-for]`);
     ifNodes = qsa(`${node} [s-if]`);
     vm = qsa(`${node} :not(input, button)`);
@@ -1081,7 +946,7 @@ const Dome = function (el = '', data = '') {
       ifNode(item, observable, item.attributes['s-if'].value);
     });
     clicks.forEach((item) => {
-      syncLocalClicks(item, observable, item.attributes['s-click'].value);
+      syncLocalClicks(item, observable, item.attributes['s-on'].value);
     });
     vm.forEach((item) => {
       if (index(item.textContent, '{{')) {
@@ -1103,9 +968,6 @@ const Dome = function (el = '', data = '') {
     // мы создаем его и помещаем туда массив
     // для хранения обработчиков
     signals[property].push(signalHandler);
-    if (signals[property].length > 40) {
-      signals[property].splice(30, signals[property].length);
-    }
     // помещаем обработчик signalHandler
     // в массив сигналов, который фактически
     // является массивом функций обратного вызова
@@ -1194,17 +1056,31 @@ const Dome = function (el = '', data = '') {
     });
     node.removeAttribute('s-text');
   }
-  function syncLocalClicks(node, datas, property) {
-    node.addEventListener('click', datas.methods[property].bind(datas));
-    node.removeAttribute('s-click');
+  function syncLocalClicks(node, observable, property) {
+    let hooks;
+    if (index(property, ":")) {
+      hooks = clicksHelper(property)
+      property = property.slice(indexOf(property, ":") + 2, property.length)
+    }
+    let args = extractArguments(property, observable)
+    let f = property.slice(0, indexOf(property, "("))
+
+    node.addEventListener(hooks.e, (event) => {
+      if (hooks.c) {
+        if (event.key.toLowerCase() == hooks.c) {
+          observable.methods[f].call(observable, ...args);
+        }
+      } else {
+        observable.methods[f].call(observable, ...args);
+      }
+    });
+    node.removeAttribute('s-on');
   }
   function observeLocalData(obj, nodes, customs) {
     for (const key in obj) {
       if (obj.hasOwnProperty(key)) {
         if (key == 'computed') {
           makeComputed(obj, key, customs);
-        } else {
-          makeReactive(obj, key, nodes);
         }
         // каждому свойству data добавляем реактивность
       }
@@ -1222,11 +1098,6 @@ const Dome = function (el = '', data = '') {
           observe(prop, () => {
             customData[prop] = observable[prop]
         }, true)
-        }
-      }
-      if (customData.methods) {
-        for (let method in customData.methods) {
-          observable.$methods = customData.methods[method];
         }
       }
 
@@ -1264,14 +1135,6 @@ const Dome = function (el = '', data = '') {
 
     this.props = { ...this.props, ...datas };
     // обновляем props
-    for (const variable in this.props) {
-      if (variable != 'template') {
-        if (variable == 'methods') {
-          this.data.$methods = this.props[variable];
-        }
-      }
-    }
-    // перебираем каждое значение props, добавляем его в data и делаем реактивным
 
     class customConstructor extends HTMLElement {
       constructor() {
