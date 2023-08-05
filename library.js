@@ -640,6 +640,9 @@ const Dome = function (el = '', data = '') {
       property = property.slice(indexOf(property, ":") + 2, property.length)
     }
     let args = extractArguments(property, data)
+    if (args.length == 0) {
+      args.push(node)
+    }
     let f = property.slice(0, indexOf(property, "("))
 
     if (dForData) {
@@ -762,9 +765,9 @@ const Dome = function (el = '', data = '') {
       newProps.forEach((item) => {
         if (index(item, "'") || index(item, '"')) {
           resArgs.push(item)
-        } else if (!isNaN(+item)) {
+        } else if (!isNaN(+item) && item !== "") {
           resArgs.push(+item)
-        } else {
+        } else if (findValue(data, item)) {
           resArgs.push(findValue(data, item))
         }
       });
