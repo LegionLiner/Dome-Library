@@ -59,6 +59,75 @@ const dom = new Dome(".lol", {
   dom.show = false // при изменении условия будет перерисовываться DOM в зависимости от изменений
 </script>
 ```
+### Директивы фреймворка
+```html
+<p>{{text}} - мой текст</p> <!-- Существует mustache синтаксис -->
+
+<p d-text="text"></p> <!-- Связать данные text с элементом <p> и вывести как текст -->
+  
+<p d-html="innerHTML"></p> <!-- Связать данные text с элементом <p> и вывести как HTML разметку -->
+  
+<p d-once="generate"></p> <!-- элемент получает значение ОДИН раз и больше не  обновляется -->
+
+<select d-model="choosen"> <!-- d-model связывает данные с элементами select'a или radio, checkbox -->
+        <option value="kek">kek</option>
+        <option value="lol">lol</option>
+        <option value="keklol">keklol</option>
+</select>
+
+<div d-bind="class: [firstClass, secondClass]">
+  ... <!-- Добавляет класс со значениями в квадратных скобках -->
+</div>
+
+<div d-bind="class: { active: isActive, getMeBigger: getBigger }">
+  ... <!-- Добавляет класс со значениями active, если isActive возвращает true,  getMeBigger, если getBigger возвращает true-->
+</div>
+
+<div d-if="isTrue"> <!-- Если isTrue возвращает true, то отрисовать этот элемент -->
+  ...
+</div>
+<div d-else-if="isThisTrue"> <!-- Если isTrue возвращает false, а isThisTrue - true, то отрисовать этот элемент -->
+  ...
+</div>
+<div d-else> <!-- Если всё выше возвращает false, отрисовать этот элемент -->
+  ...
+</div>
+
+<script>
+  const dom = new Dome("div", {
+    books: ["Маленький принц", "Золушка", "Преступление и наказание"],
+    todos: {
+      todoOne: {
+        done: "no",
+        do: "Something 1"
+      },
+      todoTwo: {
+        done: "yes",
+        do: "Something 2"
+      },
+      todoThree: {
+        done: "yes",
+        do: "Something 3"
+      }
+    },
+    methods: {
+      doneTodo(todo) {
+        todo.done == "no" ? todo.done = "yes" : todo.done == "no"
+      }
+    }
+  })
+</script>
+<div d-for="book in books"> <!-- d-for может выводить обьекты и массивы, поддерживает точенную нотацию-->
+  <p>{{book}}</p>           <!-- и может передавать аргументы из своих значений в цункцию -->
+</div>
+<div d-for="todo in todos">
+  <h3>{{todo.do}}</h3>
+  <p>{{todo.done}}</p>
+  <button d-on="click: doneTodo(todo)"></button>
+</div>
+```
+
+
 ### Все методы (Они, приблизительно, бесполезны (: просто появились первыми, вот и жалею их)
 ```js
  1. hide() //- спрятать элемент
