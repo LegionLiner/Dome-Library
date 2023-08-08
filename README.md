@@ -80,9 +80,7 @@ const dom = new Dome(".lol", {
  }) //- перемещение элемента на заданные координаты
 ```
 ### События d-event:
-      d-click, d-dblclick, d-mousedown, d-mouseup, d-select, 
-      d-mouseenter, d-mouseleave, d-mousemove, d-mouseover, 
-      d-drag, d-drop, d-touchstart, d-touchcancel, d-touchend, d-touchmove.
+      События прописываются через атрибут d-on, а дальше пишется само событие-обработчик и привязанная к нему функция, например d-on="click: doSomething()" или даже d-on="keyup.enter: doSomething()"
 ## Создание компонента
 Компонент создается двумя способами:
 
@@ -91,7 +89,7 @@ const dom = new Dome(".lol", {
 const dom = new Dome(".element", {
   dataOne: "text",
   customs: {
-    dom-component: {
+    "dom-component": { // "dom-component" и будет именем компонента в разметке HTML
       dataTwo: "secondText",
       methods: {
           method() {
@@ -105,7 +103,7 @@ const dom = new Dome(".element", {
   }
 )
 // Либо можно прописать его позже, с помощью метода custom(имя, данные)
-//
+dom.custom("dome-component", {...})
 ```
 
 Можно создавать кучу Dome приложений и монтировать к разным элементам.
@@ -118,6 +116,14 @@ const dem = new Dome(".element", {
  // данные, методы
 }, template = 
   // разметка
+)
+```
+
+А можно создавать монтировать к разным элементам ОДНО Dome приложение!.
+```js
+const dem = new Dome(".element", ".element2", {
+ // данные, методы
+}
 )
 ```
 
