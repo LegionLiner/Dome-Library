@@ -115,7 +115,6 @@ const Dome = function (el = '', data = '') {
   }
   this.props = {};
   defineProperty(this, 'props', descriptor);
-  //this.data = this;
   this.data = makeProxy(data);
   // перезаписываем data, делая его прокси обьектом
 
@@ -293,15 +292,25 @@ const Dome = function (el = '', data = '') {
   }
   // хук created
 
-  mixin(this.data.mixins, this.data, this); // в миксинах нет смысла(?)
+  mixin(this.data.mixins, this.data, this);
   // начало реактивности
   observeData(this.data, this.node, this);
 
   // Основные возможности приложения
+
+  function errThrower(condition, exp) {
+    if (!condition) {
+      console.warn(exp)
+    }
+  }
+
   function syncNode(node, observable, property) {
     if (has(node, 'd-for')) {
       return;
     }
+    errThrower(findProperty(observable, property), `Не существует переменной с именем ${property} в
+    --> ${node.outerHTML}`)
+     console.log(node);
     node.textContent = cache[property] || findValue(observable, property);
     observe(findProperty(observable, property), () => {
         node.textContent = findValue(observable, property);
@@ -314,7 +323,9 @@ const Dome = function (el = '', data = '') {
     if (has(node, 'd-for')) {
       return;
     }
-    node.value = cache[property] || findValue(observable, property);
+    errThrower(findProperty(observable, property), `Не существует переменной с именем ${property} в
+    --> ${node.outerHTML}`)
+    node.value = cache[property] || findValue(observable, property) || "";
     // значение инпута
     // равно значению property
     node.addEventListener('input', () => {
@@ -331,6 +342,8 @@ const Dome = function (el = '', data = '') {
     if (has(node, 'd-for')) {
       return;
     }
+    errThrower(findProperty(observable, property), `Не существует переменной с именем ${property} в
+    --> ${node.outerHTML}`)
     node.innerHTML = cache[property] || findValue(observable, property);
     observe(
       findProperty(observable, property),
@@ -343,6 +356,8 @@ const Dome = function (el = '', data = '') {
     if (has(node, 'd-for')) {
       return;
     }
+    errThrower(findProperty(observable, property), `Не существует переменной с именем ${property} в
+    --> ${node.outerHTML}`)
     node.textContent = cache[property] || findValue(observable, property);
     node.removeAttribute('d-once');
     // синхронизируем текст у node и удаляем атрибут
@@ -351,8 +366,20 @@ const Dome = function (el = '', data = '') {
     if (has(node, 'd-for')) {
       return;
     }
-    observable[property] = node.value;
+    errThrower(findProperty(observable, property), `Не существует переменной с именем ${property} в
+    --> ${node.outerHTML}`)
+    if (node.nodeName == "SELECT") {
+      observable[property] = node.value;
+    }
+    let def = observable[property]
     node.addEventListener('input', () => {
+      if (node.type == "checkbox") {
+        if (node.checked) {
+          observable[property] = node.value;
+        } else {
+          observable[property] = def;
+        }
+      }
       observable[property] = node.value; // привязываем input к property
     });
     observe(findProperty(observable, property), () => {
@@ -369,7 +396,7 @@ const Dome = function (el = '', data = '') {
     const indexOne = indexOf(text, '{{');
     const indexTwo = indexOf(text, '}}');
     if (!ifObserved) {
-      for (let value of VMnesting(text, "", observable)) {
+      for (let value of VMnesting(text, "", observable, node)) {
         observe(value, () => {
               syncVM(node, observable, nodeInner, true);
         });
@@ -380,10 +407,11 @@ const Dome = function (el = '', data = '') {
         if (indexTwo) {
           const value = text.slice(indexOne + 2, indexTwo).trim();
           if (index(value, '.')) {
-            const prop = findValue(observable, value);
+            const prop = findValue(observable, value) || "";
             text = prop + text.slice(indexTwo + 2, text.length);
           } else {
-            text = observable[value] + text.slice(indexTwo + 2, text.length);
+            let val = observable[value] || ""
+            text = val + text.slice(indexTwo + 2, text.length);
           }
           node.innerHTML = text;
         }
@@ -398,7 +426,8 @@ const Dome = function (el = '', data = '') {
             value = findValue(observable, value);
             text = value + text.slice(indexTwo + 2, text.length);
           } else {
-            text = observable[value] + text.slice(indexTwo + 2, text.length);
+            let val = observable[value] || ""
+            text = val + text.slice(indexTwo + 2, text.length);
           }
           node.innerHTML = previousText + text;
         }
@@ -421,6 +450,8 @@ const Dome = function (el = '', data = '') {
     if (has(node, 'd-for')) {
       return;
     }
+    errThrower(findProperty(observable, property), `Не существует переменной с именем ${property} в
+    --> ${node.outerHTML}`)
     let value = property;
     let prop = property;
     if (index(property, '!')) {
@@ -460,15 +491,16 @@ const Dome = function (el = '', data = '') {
       });
     }
   }
+
   function _anonimFor(node, observable, property, inner) {
     fors = new Map();
-    const lol = property.slice(property.lastIndexOf(' ') + 1, property.length);
+    const varName = property.slice(property.lastIndexOf(' ') + 1, property.length);
+    const propsName = property.slice(0, property.indexOf(' '));
     let nodeName = node.nodeName.toLowerCase(); // узнаем имя node
-    const index = 0;
     let remove = false;
     const text = node.textContent;
     const timeFors = fors;
-    const value = findValue(observable, lol);
+    const value = findValue(observable, varName);
     fors.clear();
 
     node.innerHTML = '';
@@ -479,7 +511,7 @@ const Dome = function (el = '', data = '') {
     node.childElementCount = 0;
     if (node.childElementCount < childCount) {
       // пока потомков меньше, чем нужно,
-      // рисуем нового с данными из observable[lol][el]
+      // рисуем нового с данными из observable[varName][el]
       for (const el in value) {
         const li = document.createElement(nodeName);
         if (nodeName == 'div') {
@@ -515,7 +547,7 @@ const Dome = function (el = '', data = '') {
     remove ? node.remove() : '';
     let specialIndexForSpecialClicks = 0;
     fors.forEach((item, node) => {
-      item = {item};
+      item = {[propsName]: item}
       item.specialIndexForSpecialClicks = specialIndexForSpecialClicks++;
       parseEL(node, item, observable);
     });
@@ -541,19 +573,32 @@ const Dome = function (el = '', data = '') {
         return true;
       },
     };
-    const lol = property.slice(property.lastIndexOf(' ') + 1, property.length);
+    const varName = property.slice(property.lastIndexOf(' ') + 1, property.length);
+    const propsName = property.slice(0, property.indexOf(' '));
     let nodeName = node.nodeName.toLowerCase(); // узнаем имя node
-    const index = 0;
     let remove = false;
     const text = node.textContent;
     let inner = node.innerHTML;
     const timeFors = fors;
-    const value = findValue(observable, lol);
-    if (!observable[lol][isObserved]) {
-      observe(lol, () => {
+    const value = findValue(observable, varName);
+    try {
+      observable[varName] = new Proxy(observable[varName], valid);
+    } catch (e) {
+      if (!value) {
+        errThrower(false, `Переменной ${varName} не существует или ей не дано значение в
+        --> ${node.outerHTML}`)
+      }
+      if (!(isArray(value) || isObject(value))) {
+        errThrower(false, `Переменная ${varName} не является перечисляемой в
+        --> ${node.outerHTML};
+      ${e}`)
+      }
+      return;
+    }
+    if (!observable[varName][isObserved]) {
+      observe(varName, () => {
         _anonimFor(node, observable, property, inner);
       });
-      observable[lol] = new Proxy(observable[lol], valid);
     }
     fors.clear();
     // узнаем значение, которое требуется искать в data
@@ -565,7 +610,7 @@ const Dome = function (el = '', data = '') {
     node.childElementCount = 0;
     if (node.childElementCount < childCount) {
       // пока потомков меньше, чем нужно,
-      // рисуем нового с данными из observable[lol][el]
+      // рисуем нового с данными из observable[varName][el]
       for (const el in value) {
         const li = document.createElement(nodeName);
         if (nodeName == 'div') {
@@ -601,7 +646,8 @@ const Dome = function (el = '', data = '') {
     remove ? node.remove() : '';
     let specialIndexForSpecialClicks = 0;
     fors.forEach((item, node) => {
-      item = {item}
+      item = {[propsName]: item}
+      console.log(item);
       defineProperty(item, 'specialIndexForSpecialClicks', {
         value: specialIndexForSpecialClicks++,
         configurable: true,
@@ -633,30 +679,29 @@ const Dome = function (el = '', data = '') {
       return { e, c };
     }
   }
-  function syncClicks(node, data, property, dForData) {
+  function syncClicks(node, observable, property, dForData) {
     let hooks
     if (index(property, ":")) {
       hooks = clicksHelper(property)
       property = property.slice(indexOf(property, ":") + 2, property.length)
     }
-    let args = extractArguments(property, data)
-    if (args.length == 0) {
-      args.push(node)
-    }
+    let args = extractArguments(property, observable, node)
     let f = property.slice(0, indexOf(property, "("))
+    errThrower(observable.methods[f], `Не существует метода с именем ${property} в
+    --> ${node.outerHTML}`)
 
     if (dForData) {
       node.addEventListener(hooks.e, (event) => {
         if (hooks.c) {
           if (event.key.toLowerCase() == hooks.c) {
             dForData.methods[f].call(
-              data.item,
+              observable.item,
               ...args
             );
           }
         } else {
           dForData.methods[f].call(
-            data.item,
+            observable.item,
             ...args
           );
         }
@@ -665,37 +710,34 @@ const Dome = function (el = '', data = '') {
       node.addEventListener(hooks.e, (event) => {
         if (hooks.c) {
           if (event.key.toLowerCase() == hooks.c) {
-            data.methods[f].call(data, ...args);
+            observable.methods[f].call(observable, ...args);
           }
         } else {
-          data.methods[f].call(data, ...args);
+          observable.methods[f].call(observable, ...args);
         }
       });
     }
     node.removeAttribute('d-on');
   }
-  function selfRender(node, observable, property) {
-    for (let variable in observable) {
-      if (property.startsWith(variable)) {
-        const lol = property.slice(
-          property.lastIndexOf(':') + 2,
-          property.length,
-        );
-        observable[variable] = lol;
-
-        node.textContent = observable[variable];
-        observe(property, () => (node.textContent = observable[variable]));
-      }
-    }
-  }
   function syncBind(node, observable, property) {
-      const attrName = property.slice(0, indexOf(property, ':'));
-      let condition = property.slice(
-        indexOf(property, ':') + 2,
-        property.length,
-      );
+    let attrName = property.slice(0, indexOf(property, ':'));
+    if (indexOf(property, ':') == -1) {
+      errThrower(false, `Атрибут d-bind должен содержать порядок "атрибут: условия" в узле
+      ${node.outerHTML}`)
+      attrName = property
+    }
+    let condition = property.slice(
+      indexOf(property, ':') + 2,
+      property.length,
+    );
+    if (index(condition, "[")) {
+      condition = condition.slice(1, condition.length - 1)
       condition = condition.split(", ")
       condition = condition.reduce((a, b) => {
+        errThrower(findProperty(observable, a), `Не существует переменной с именем ${a} в узле
+        --> ${node.outerHTML}`)
+        errThrower(findProperty(observable, b), `Не существует переменной с именем ${b} в узле
+        --> ${node.outerHTML}`)
         return `${findValue(observable, a)} ${findValue(observable, b)}`
       })
       node.setAttribute(attrName, condition);
@@ -706,6 +748,26 @@ const Dome = function (el = '', data = '') {
           });
         }
       })
+    } else if (index(condition, "{")) {
+      condition = condition.slice(2, condition.length - 2)
+      condition = condition.split(", ")
+      let res = ""
+      condition.forEach((item) => {
+        let atrCond = item.slice(0, indexOf(item, ":"))
+        let state = item.slice(indexOf(item, ":") + 2, item.length)
+        errThrower(findProperty(observable, state), `Не существует переменной с именем ${state} в узле
+        --> ${node.outerHTML}`)
+        if (findValue(observable, state)) {
+          res += atrCond + " "
+        }
+        if (!signals[findProperty(observable, state)]) {
+          observe(findProperty(observable, state), () => {
+            syncBind(node, observable, property);
+          });
+        }
+      });
+      node.setAttribute(attrName, res)
+    }
   }
   // Вспомогательные методы
   function nesting(value, observable, set) {
@@ -724,14 +786,24 @@ const Dome = function (el = '', data = '') {
       nesting(slice, observable, set);
     }
   }
-  function VMnesting(text, observed, observable) {
+  function VMnesting(text, observed, observable, node) {
+    let flag = true;
     let result
     observed ? result = observed : result = [];
     let start = indexOf(text, "{{")
     let end = indexOf(text, "}}")
     let str = text.slice(start + 2, end)
     if (indexOf(str, ".") != -1) {
+      errThrower(findValue(observable, str), `Не существует переменной с именем ${str} в
+      --> ${node.outerHTML}
+      или её значение не определено`)
       str = findProperty(observable, str)
+      flag = false
+    }
+    if (flag) {
+      errThrower(typeof observable[str] !== "undefined", `Не существует переменной с именем ${str} в
+      --> ${node.outerHTML}
+      или её значение не определено`)
     }
     result.push(str)
     text = text.slice(end + 2, text.length)
@@ -746,7 +818,11 @@ const Dome = function (el = '', data = '') {
       const nextValue = value.slice(indexOf(value, '.') + 1, value.length);
       return findValue(observable[obj], nextValue);
     }
-    cache[value] = observable[value];
+    try {
+      cache[value] = observable[value];
+    } catch (e) {
+      return;
+    }
     return observable[value];
   }
   function findProperty(observable, value) {
@@ -754,20 +830,25 @@ const Dome = function (el = '', data = '') {
       const obj = value.slice(value.lastIndexOf(".") + 1, value.length);
       return obj;
     }
-    return value;
+    if (typeof observable[value] !== "undefined") {
+      return value;
+    }
   }
-  function extractArguments(property, data) {
+  function extractArguments(property, data, node) {
     let resArgs = [];
     let startPoint = indexOf(property, "(");
+    let newProps;
     if (startPoint != -1) {
       let endPoint = indexOf(property, ")");
-      let newProps =  property.slice(startPoint + 1, endPoint).split(", ")
+      newProps = property.slice(startPoint + 1, endPoint).split(", ");
       newProps.forEach((item) => {
         if (index(item, "'") || index(item, '"')) {
           resArgs.push(item)
-        } else if (!isNaN(+item) && item !== "") {
+        } else if (!isNaN(+item)) {
           resArgs.push(+item)
-        } else if (findValue(data, item)) {
+        } else {
+          errThrower(findProperty(data, item), `Не существует имен ${property.slice(indexOf(property, "(") + 1, property.length - 1)} в
+          --> ${node.outerHTML}`)
           resArgs.push(findValue(data, item))
         }
       });
@@ -781,25 +862,32 @@ const Dome = function (el = '', data = '') {
     }
     if (node.children == 0) {
       if (has(node, 'd-bind')) {
+        errThrower(node.attributes['d-bind'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
         syncBind(node, observable, node.attributes['d-bind'].value);
       }
       if (has(node, 'd-text')) {
         if (has(node, 'value')) {
+          errThrower(node.attributes['d-text'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
           syncValue(node, observable, node.attributes['d-text'].value);
         } else {
+          errThrower(node.attributes['d-text'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
           syncNode(node, observable, node.attributes['d-text'].value);
         }
       }
       if (has(node, 'd-once')) {
+        errThrower(node.attributes['d-once'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
         syncOnce(node, observable, node.attributes['d-once'].value);
       }
       if (has(node, 'd-html')) {
+        errThrower(node.attributes['d-html'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
         syncAsHtml(node, observable, node.attributes['d-html'].value);
       }
       if (has(node, 'd-on')) {
+        errThrower(node.attributes['d-on'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
         syncClicks(node, observable, node.attributes['d-on'].value);
       }
       if (has(node, 'd-model')) {
+        errThrower(node.attributes['d-model'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
         syncClicks(node, observable, node.attributes['d-model'].value);
       }
     } else {
@@ -816,38 +904,45 @@ const Dome = function (el = '', data = '') {
 
       node.classList.remove(random);
 
-      bind.forEach((item) => {
-        syncBind(item, observable, item.attributes['d-bind'].value);
+      bind.forEach((node) => {
+        errThrower(node.attributes['d-bind'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+        syncBind(node, observable, node.attributes['d-bind'].value);
       });
-      ifs.forEach((item) => {
-        ifNode(item, observable, item.attributes['d-if'].value);
+      ifs.forEach((node) => {
+        errThrower(node.attributes['d-if'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+        ifNode(node, observable, node.attributes['d-if'].value);
       });
       model.forEach((node) => {
         if (node.nodeName == 'SELECT') {
+          errThrower(node.attributes['d-model'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
           syncSelect(node, observable, node.attributes['d-model'].value);
         }
       });
       nodes.forEach((node) => {
-        if (node.hasAttribute('value')) {
+        errThrower(node.attributes['d-text'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+        if (node.nodeName == 'INPUT' || node.nodeName == "TEXTAREA") {
           syncValue(node, observable, node.attributes['d-text'].value);
         } else {
           syncNode(node, observable, node.attributes['d-text'].value);
         }
       });
-      once.forEach((one) => {
-        syncOnce(one, observable, one.attributes['d-once'].value);
+      once.forEach((node) => {
+        errThrower(node.attributes['d-once'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+        syncOnce(node, observable, node.attributes['d-once'].value);
       });
-      asHtml.forEach((item) => {
-        syncAsHtml(item, observable, item.attributes['d-html'].value);
+      asHtml.forEach((node) => {
+        errThrower(node.attributes['d-html'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+        syncAsHtml(node, observable, node.attributes['d-html'].value);
       });
-      clicks.forEach((item) => {
+      clicks.forEach((node) => {
+        errThrower(node.attributes['d-on'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
         syncClicks(
-          item,
+          node,
           observable,
-          item.attributes['d-on'].value,
+          node.attributes['d-on'].value,
           data,
         );
-        item.removeAttribute('d-on');
+        node.removeAttribute('d-on');
       });
     }
     if (!observed.has(observable.constIndex)) {
@@ -867,64 +962,62 @@ const Dome = function (el = '', data = '') {
       }
     }
   }
-  function parseDOM(node, observable) {
+  function parseDOM(parentNode, observable) {
     // парс DOM, ищем все атрибуты в node
-    const bind = qsa(`${node} [d-bind]`);
-    bind.forEach((item) => {
-      syncBind(item, observable, item.attributes['d-bind'].value);
+    const bind = qsa(`${parentNode} [d-bind]`);
+    bind.forEach((node) => {
+      errThrower(node.attributes['d-bind'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+      syncBind(node, observable, node.attributes['d-bind'].value);
     });
-    const dFor = qsa(`${node} [d-for]`);
-    dFor.forEach((item) => {
-      syncFor(item, observable, item.attributes['d-for'].value);
+    const dFor = qsa(`${parentNode} [d-for]`);
+    dFor.forEach((node) => {
+      errThrower(node.attributes['d-for'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+      syncFor(node, observable, node.attributes['d-for'].value);
     });
 
-    const asHtml = qsa(`${node} [d-html]`);
-    once = qsa(`${node} [d-once]`);
-    nodes = qsa(`${node} [d-text]`);
-    ifs = qsa(`${node} [d-if]`);
-    select = qsa(`${node} [d-select]`);
-    selfRendering = qsa(`${node} [self]`);
-    vm = qsa(`${node} :not(input, button)`);
-    model = qsa(`${node} [d-model]`);
+    const asHtml = qsa(`${parentNode} [d-html]`);
+    once = qsa(`${parentNode} [d-once]`);
+    nodes = qsa(`${parentNode} [d-text]`);
+    ifs = qsa(`${parentNode} [d-if]`);
+    selfRendering = qsa(`${parentNode} [self]`);
+    vm = qsa(`${parentNode} :not(input, button)`);
+    model = qsa(`${parentNode} [d-model]`);
 
     // для кадого найденного элемента с атрибутом x вызываем функцию,
     // связанную c этим x атрибутом
 
     nodes.forEach((node) => {
-      if (node.nodeName == 'INPUT') {
+      errThrower(node.attributes['d-text'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+      if (node.nodeName == 'INPUT' || node.nodeName == "TEXTAREA") {
         syncValue(node, observable, node.attributes['d-text'].value);
       } else {
         syncNode(node, observable, node.attributes['d-text'].value);
       }
     });
     model.forEach((node) => {
-      if (node.nodeName == 'SELECT') {
+        errThrower(node.attributes['d-model'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
         syncSelect(node, observable, node.attributes['d-model'].value);
+    });
+    ifs.forEach((node) => {
+      errThrower(node.attributes['d-if'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+      ifNode(node, observable, node.attributes['d-if'].value);
+    });
+    once.forEach((node) => {
+      errThrower(node.attributes['d-once'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+      syncOnce(node, observable, node.attributes['d-once'].value);
+    });
+    asHtml.forEach((node) => {
+      errThrower(node.attributes['d-html'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+      syncAsHtml(node, observable, node.attributes['d-html'].value);
+    });
+    vm.forEach((node) => {
+      if (index(node.textContent, '{{')) {
+        syncVM(node, observable);
       }
     });
-    selfRendering.forEach((item) => {
-      selfRender(item, observable, item.attributes.self.value);
-    });
-    ifs.forEach((item) => {
-      ifNode(item, observable, item.attributes['d-if'].value);
-    });
-    once.forEach((one) => {
-      syncOnce(one, observable, one.attributes['d-once'].value);
-    });
-    asHtml.forEach((item) => {
-      syncAsHtml(item, observable, item.attributes['d-html'].value);
-    });
-    vm.forEach((item) => {
-      if (index(item.textContent, '{{')) {
-        syncVM(item, observable);
-      }
-    });
-    clicks = qsa(`${node} [d-on]`);
-    clicks.forEach((click) => {
-      syncClicks(click, observable, click.attributes['d-on'].value);
-    });
-    select.forEach((item) => {
-      syncSelect(item, observable, item.attributes['d-select'].value);
+    clicks = qsa(`${parentNode} [d-on]`);
+    clicks.forEach((node) => {
+      syncClicks(node, observable, node.attributes['d-on'].value);
     });
 
   }
@@ -940,23 +1033,27 @@ const Dome = function (el = '', data = '') {
 
     nodes.forEach((node) => {
       if (has(node, 'value')) {
+        errThrower(node.attributes['s-text'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
         syncLocalValue(node, observable, node.attributes['s-text'].value);
       } else {
+        errThrower(node.attributes['s-text'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
         syncNode(node, observable, node.attributes['s-text'].value);
       }
     });
-    ifNodes.forEach((item) => {
-      ifNode(item, observable, item.attributes['s-if'].value);
+    ifNodes.forEach((node) => {
+      errThrower(node.attributes['s-if'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+      ifNode(node, observable, node.attributes['s-if'].value);
     });
-    clicks.forEach((item) => {
-      syncLocalClicks(item, observable, item.attributes['s-on'].value);
+    clicks.forEach((node) => {
+      errThrower(node.attributes['s-on'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+      syncLocalClicks(node, observable, node.attributes['s-on'].value);
     });
-    vm.forEach((item) => {
-      if (index(item.textContent, '{{')) {
-        syncVM(item, observable);
+    vm.forEach((node) => {
+      if (index(node.textContent, '{{')) {
+        syncVM(node, observable);
       }
     });
-  };
+  }
   // Реактивность
   function observe(property, signalHandler, isCustom) {
     if (isCustom) {
@@ -1042,8 +1139,15 @@ const Dome = function (el = '', data = '') {
         // каждому свойству data добавляем реактивность
       }
     }
-    parseDOM(node, obj); // и парсим DOM в первый раз, отрисовывая
-                         // все реактивные свойства
+    if (isArray(node)) {
+      node.forEach((item) => {
+        parseDOM(item, obj);
+      });
+    } else {
+        parseDOM(node, obj);
+    }
+     // и парсим DOM в первый раз, отрисовывая
+     // все реактивные свойства
   }
 
   if (this.data.reactive) {
@@ -1053,6 +1157,8 @@ const Dome = function (el = '', data = '') {
 
   // Методы для кастом компонентов
   function syncLocalValue(node, observable, property) {
+    errThrower(findProperty(observable, property), `Не существует переменной с именем ${property} в
+    --> ${node.outerHTML}`)
     node.value = findValue(observable, property);
     node.addEventListener('input', () => {
       observable[property] = node.value;
@@ -1065,8 +1171,10 @@ const Dome = function (el = '', data = '') {
       hooks = clicksHelper(property)
       property = property.slice(indexOf(property, ":") + 2, property.length)
     }
-    let args = extractArguments(property, observable)
+    let args = extractArguments(property, observable, node)
     let f = property.slice(0, indexOf(property, "("))
+    errThrower(observable.methods[f], `Не существует метода с именем ${property} в
+    --> ${node.outerHTML}`)
 
     node.addEventListener(hooks.e, (event) => {
       if (hooks.c) {
@@ -1120,7 +1228,12 @@ const Dome = function (el = '', data = '') {
           parseLocalDOM(this.name, this.data);
         }
       }
-      customElements.define(custom, customConstructor);
+      try {
+        customElements.define(custom, customConstructor);
+      } catch (e) {
+        errThrower(false, `      Невозможно обьявить компонент с именем ${custom}, это имя является невалидным
+        ${e}`)
+      }
     }
   }
   this.custom = function (name, datas) {
@@ -1168,7 +1281,12 @@ const Dome = function (el = '', data = '') {
         parseLocalDOM(name, custom[name][this.$c]);
       }
     }
-    customElements.define(name, customConstructor);
+    try {
+      customElements.define(name, customConstructor);
+    } catch (e) {
+      errThrower(false, `      Невозможно обьявить компонент с именем ${name}, это имя является невалидным
+      ${e}`)
+    }
     // создаём customElement
 
     if (datas.defined) {
@@ -1236,7 +1354,7 @@ const Dome = function (el = '', data = '') {
       } else if (item != 'computed') {
         if (isObject(obj[item])) {
           for (const objEl in obj[item]) {
-            if (objEl != 'methods' && objEl != 'computed') {
+            if (objEl !== 'methods' && objEl !== 'computed') {
               defineProperty(parent, objEl, {
                 get() {
                   return obj[item][objEl];
