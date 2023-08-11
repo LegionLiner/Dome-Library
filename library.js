@@ -88,6 +88,9 @@ const Dome = function (el = '', data = '') {
         }
         if (isObject(target[key])) {
           if (!target[key][isProxy]) {
+            if (key == "customs") {
+                return target[key];
+            }
             target[key] = new Proxy(target[key], validator);
             return target[key];
           }
@@ -310,7 +313,6 @@ const Dome = function (el = '', data = '') {
     }
     errThrower(findProperty(observable, property), `Не существует переменной с именем ${property} в
     --> ${node.outerHTML}`)
-     console.log(node);
     node.textContent = cache[property] || findValue(observable, property);
     observe(findProperty(observable, property), () => {
         node.textContent = findValue(observable, property);
@@ -647,7 +649,6 @@ const Dome = function (el = '', data = '') {
     let specialIndexForSpecialClicks = 0;
     fors.forEach((item, node) => {
       item = {[propsName]: item}
-      console.log(item);
       defineProperty(item, 'specialIndexForSpecialClicks', {
         value: specialIndexForSpecialClicks++,
         configurable: true,
@@ -733,13 +734,17 @@ const Dome = function (el = '', data = '') {
     if (index(condition, "[")) {
       condition = condition.slice(1, condition.length - 1)
       condition = condition.split(", ")
-      condition = condition.reduce((a, b) => {
-        errThrower(findProperty(observable, a), `Не существует переменной с именем ${a} в узле
-        --> ${node.outerHTML}`)
-        errThrower(findProperty(observable, b), `Не существует переменной с именем ${b} в узле
-        --> ${node.outerHTML}`)
-        return `${findValue(observable, a)} ${findValue(observable, b)}`
-      })
+      if (condition.length === 1) {
+        condition = findValue(observable, condition[0])
+      } else {
+        condition = condition.reduce((a, b) => {
+          errThrower(findProperty(observable, a), `Не существует переменной с именем ${a} в узле
+          --> ${node.outerHTML}`)
+          errThrower(findProperty(observable, b), `Не существует переменной с именем ${b} в узле
+          --> ${node.outerHTML}`)
+          return `${findValue(observable, a)} ${findValue(observable, b)}`
+        })
+      }
       node.setAttribute(attrName, condition);
       condition.split(" ").forEach((item) => {
         if (!signals[findProperty(observable, item)]) {
@@ -768,6 +773,7 @@ const Dome = function (el = '', data = '') {
       });
       node.setAttribute(attrName, res)
     }
+    node.removeAttribute("d-bind")
   }
   // Вспомогательные методы
   function nesting(value, observable, set) {
@@ -798,9 +804,9 @@ const Dome = function (el = '', data = '') {
       --> ${node.outerHTML}
       или её значение не определено`)
       str = findProperty(observable, str)
-      flag = false
+    //  flag = false
     }
-    if (flag) {
+    if (!flag) {
       errThrower(typeof observable[str] !== "undefined", `Не существует переменной с именем ${str} в
       --> ${node.outerHTML}
       или её значение не определено`)
@@ -808,7 +814,7 @@ const Dome = function (el = '', data = '') {
     result.push(str)
     text = text.slice(end + 2, text.length)
     if (indexOf(text, "{{") != -1) {
-      return VMnesting(text, result)
+      return VMnesting(text, result, observable, node)
     }
     return result;
   }
@@ -979,7 +985,6 @@ const Dome = function (el = '', data = '') {
     once = qsa(`${parentNode} [d-once]`);
     nodes = qsa(`${parentNode} [d-text]`);
     ifs = qsa(`${parentNode} [d-if]`);
-    selfRendering = qsa(`${parentNode} [self]`);
     vm = qsa(`${parentNode} :not(input, button)`);
     model = qsa(`${parentNode} [d-model]`);
 
@@ -1021,22 +1026,30 @@ const Dome = function (el = '', data = '') {
     });
 
   }
-  function parseLocalDOM (node, observable, count) {
+  function parseLocalDOM (node, observable) {
+    const bind = qsa(`${node} [s-bind]`);
+    bind.forEach((node) => {
+      errThrower(node.attributes['s-bind'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+      syncBind(node, observable, node.attributes['s-bind'].value);
+    });
+    const dFor = qsa(`${node} [s-for]`);
+    dFor.forEach((node) => {
+      errThrower(node.attributes['s-for'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+      syncFor(node, observable, node.attributes['s-for'].value);
+    });
+
     const asHtml = qsa(`${node} [s-html]`);
     once = qsa(`${node} [s-once]`);
     nodes = qsa(`${node} [s-text]`);
-    classes = qsa(`${node} [s-class]`);
     clicks = qsa(`${node} [s-on]`);
-    dFor = qsa(`${node} [s-for]`);
     ifNodes = qsa(`${node} [s-if]`);
     vm = qsa(`${node} :not(input, button)`);
-
+    model = qsa(`${node} [s-model]`);
     nodes.forEach((node) => {
-      if (has(node, 'value')) {
-        errThrower(node.attributes['s-text'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+      errThrower(node.attributes['s-text'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+      if (node.nodeName == 'INPUT' || node.nodeName == "TEXTAREA") {
         syncLocalValue(node, observable, node.attributes['s-text'].value);
       } else {
-        errThrower(node.attributes['s-text'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
         syncNode(node, observable, node.attributes['s-text'].value);
       }
     });
@@ -1047,6 +1060,18 @@ const Dome = function (el = '', data = '') {
     clicks.forEach((node) => {
       errThrower(node.attributes['s-on'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
       syncLocalClicks(node, observable, node.attributes['s-on'].value);
+    });
+    once.forEach((node) => {
+      errThrower(node.attributes['s-once'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+      syncOnce(node, observable, node.attributes['s-once'].value);
+    });
+    asHtml.forEach((node) => {
+      errThrower(node.attributes['s-html'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+      syncAsHtml(node, observable, node.attributes['s-html'].value);
+    });
+    model.forEach((node) => {
+        errThrower(node.attributes['s-model'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+        syncSelect(node, observable, node.attributes['s-model'].value);
     });
     vm.forEach((node) => {
       if (index(node.textContent, '{{')) {
@@ -1129,12 +1154,13 @@ const Dome = function (el = '', data = '') {
     }
   }
   function observeData(obj, node, customs) {
+    let customKey = ""
     for (const key in obj) {
       if (obj.hasOwnProperty(key)) {
         if (key == 'computed') {
           makeComputed(obj, key, customs);
         } else if (key == "customs") {
-          parseCustoms(node, obj, obj[key])
+          customKey = key
         }
         // каждому свойству data добавляем реактивность
       }
@@ -1146,6 +1172,7 @@ const Dome = function (el = '', data = '') {
     } else {
         parseDOM(node, obj);
     }
+    parseCustoms(node, obj, obj[customKey])
      // и парсим DOM в первый раз, отрисовывая
      // все реактивные свойства
   }
@@ -1203,12 +1230,15 @@ const Dome = function (el = '', data = '') {
     for (let custom in property) {
       let customData = property[custom];
       let template = customData.template;
+      delete customData.template
       if (customData.props) {
         for (let prop of customData.props) {
-          customData[prop] = observable[prop];
-          observe(prop, () => {
-            customData[prop] = observable[prop]
-        }, true)
+          if (observable[prop]) {
+            customData[prop] = observable[prop];
+            observe(prop, () => {
+              customData[prop] = observable[prop]
+          })
+          }
         }
       }
 
@@ -1217,13 +1247,30 @@ const Dome = function (el = '', data = '') {
           super();
           this.name = custom;
           this.data = customData;
+          for (let attr of this.attributes) {
+            if (!index(attr.name, "d-")) {
+              this.data[attr.name] = attr.nodeValue
+            }
+          }
           this.data.el = qs(this.name);
           this.data = makeProxy(this.data);
+          delete this.data.props
+          if (this.data.created) {
+            this.data.created()
+          }
+          // хук created для компонентов
         }
 
         connectedCallback() {
+          for (let attr of this.attributes) {
+            this.removeAttribute(attr.name)
+          }
           this.innerHTML = template;
           customs.set(this, customData);
+          if (this.data.onMount) {
+            this.data.onMount()
+          }
+          // хук onMount для компонентов
           observeLocalData(this.data, this.name, this);
           parseLocalDOM(this.name, this.data);
         }
@@ -1236,72 +1283,6 @@ const Dome = function (el = '', data = '') {
       }
     }
   }
-  this.custom = function (name, datas) {
-    const { template } = datas;
-    const propsData = {};
-    // создаём временные переменные для удобства
-    if (datas.props) {
-      for (const prop of datas.props) {
-        propsData[prop] = data[prop];
-      }
-    }
-    // из всех props добавляем значение в данные компонента
-    const customData = { ...propsData, ...datas };
-    customData.template = null;
-
-    this.props = { ...this.props, ...datas };
-    // обновляем props
-
-    class customConstructor extends HTMLElement {
-      constructor() {
-        super();
-        customCount++;
-        this.$c = customCount;
-        if (!custom[name]) {
-          custom[name] = {};
-        }
-        custom[name][this.$c] = { ...customData };
-        this.data = custom[name][this.$c];
-        this.data.$elName = name;
-        this.data.$el = qs(name);
-        this.data.$emit = data;
-        mixin(this.data.mixins, this.data, this);
-        this.data = makeProxy(this.data);
-      }
-
-      connectedCallback() {
-        this.innerHTML = template;
-        for (const variable of this.attributes) {
-          if (!variable.name.startsWith('d-')) {
-            this.data[variable.name] = variable.value;
-          }
-        }
-        customs.set(this, customData);
-        observeLocalData(custom[name][this.$c], name, this);
-        parseLocalDOM(name, custom[name][this.$c]);
-      }
-    }
-    try {
-      customElements.define(name, customConstructor);
-    } catch (e) {
-      errThrower(false, `      Невозможно обьявить компонент с именем ${name}, это имя является невалидным
-      ${e}`)
-    }
-    // создаём customElement
-
-    if (datas.defined) {
-      datas.defined();
-    }
-    // хук defined
-
-    parseDOM(name, this.data);
-    // парс DOM для элемента
-    if (datas.parsed) {
-      datas.parsed();
-    }
-    // хук parsed
-  };
-  defineProperty(this, 'custom', descriptor);
   // метод для компонентов
 
   // Миксины - отдельный столп бесполезности
@@ -1354,7 +1335,7 @@ const Dome = function (el = '', data = '') {
       } else if (item != 'computed') {
         if (isObject(obj[item])) {
           for (const objEl in obj[item]) {
-            if (objEl !== 'methods' && objEl !== 'computed') {
+            if (objEl != 'methods' && objEl != 'computed') {
               defineProperty(parent, objEl, {
                 get() {
                   return obj[item][objEl];
