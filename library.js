@@ -1,12 +1,3 @@
-// Начало самой библиотеки
-const Dome = function (el = '', data = '') {
-  if (data.beforeCreated) {
-    data.beforeCreated();
-  }
-  // хук beforeCreated
-
-  const isProxy = Symbol('isProxy');
-  const isObserved = Symbol('isObserved');
   let signals = {};
   let fors = new Map();
   let customs = new Map();
@@ -16,6 +7,22 @@ const Dome = function (el = '', data = '') {
   let forsSignals = new Map();
   let customsSignals = {};
   let cache = {};
+
+// Начало самой библиотеки
+const Dome = function (el = '', data = '') {
+  if (data.beforeCreated) {
+    data.beforeCreated();
+  }
+  // хук beforeCreated
+
+    function errThrower(condition, exp) {
+      if (!condition) {
+        console.warn(exp)
+      }
+    }
+
+  const isProxy = Symbol('isProxy');
+  const isObserved = Symbol('isObserved');
   const descriptor = {
     enumerable: false,
     writable: false,
@@ -300,12 +307,6 @@ const Dome = function (el = '', data = '') {
   observeData(this.data, this.node, this);
 
   // Основные возможности приложения
-
-  function errThrower(condition, exp) {
-    if (!condition) {
-      console.warn(exp)
-    }
-  }
 
   function syncNode(node, observable, property) {
     if (has(node, 'd-for')) {
@@ -734,10 +735,14 @@ const Dome = function (el = '', data = '') {
     if (index(condition, "[")) {
       condition = condition.slice(1, condition.length - 1)
       condition = condition.split(", ")
+      let names = []
       if (condition.length === 1) {
+        names[0] = condition[0]
         condition = findValue(observable, condition[0])
       } else {
         condition = condition.reduce((a, b) => {
+          names.push(a)
+          names.push(b)
           errThrower(findProperty(observable, a), `Не существует переменной с именем ${a} в узле
           --> ${node.outerHTML}`)
           errThrower(findProperty(observable, b), `Не существует переменной с именем ${b} в узле
@@ -746,13 +751,13 @@ const Dome = function (el = '', data = '') {
         })
       }
       node.setAttribute(attrName, condition);
-      condition.split(" ").forEach((item) => {
+      names.forEach((item) => {
         if (!signals[findProperty(observable, item)]) {
           observe(findProperty(observable, item), () => {
             syncBind(node, observable, property);
           });
         }
-      })
+      });
     } else if (index(condition, "{")) {
       condition = condition.slice(2, condition.length - 2)
       condition = condition.split(", ")
@@ -804,7 +809,6 @@ const Dome = function (el = '', data = '') {
       --> ${node.outerHTML}
       или её значение не определено`)
       str = findProperty(observable, str)
-    //  flag = false
     }
     if (!flag) {
       errThrower(typeof observable[str] !== "undefined", `Не существует переменной с именем ${str} в
@@ -987,7 +991,6 @@ const Dome = function (el = '', data = '') {
     ifs = qsa(`${parentNode} [d-if]`);
     vm = qsa(`${parentNode} :not(input, button)`);
     model = qsa(`${parentNode} [d-model]`);
-
     // для кадого найденного элемента с атрибутом x вызываем функцию,
     // связанную c этим x атрибутом
 
@@ -1022,6 +1025,7 @@ const Dome = function (el = '', data = '') {
     });
     clicks = qsa(`${parentNode} [d-on]`);
     clicks.forEach((node) => {
+      errThrower(node.attributes['d-on'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
       syncClicks(node, observable, node.attributes['d-on'].value);
     });
 
@@ -1081,13 +1085,6 @@ const Dome = function (el = '', data = '') {
   }
   // Реактивность
   function observe(property, signalHandler, isCustom) {
-    if (isCustom) {
-      if (!customsSignals[property]) {
-        customsSignals[property] = [];
-      }
-      customsSignals[property].push(signalHandler);
-      return
-    }
     if (!signals[property]) signals[property] = [];
     // если для данного свойства нет сигнала,
     // мы создаем его и помещаем туда массив
@@ -1272,7 +1269,6 @@ const Dome = function (el = '', data = '') {
           }
           // хук onMount для компонентов
           observeLocalData(this.data, this.name, this);
-          parseLocalDOM(this.name, this.data);
         }
       }
       try {
@@ -1283,7 +1279,6 @@ const Dome = function (el = '', data = '') {
       }
     }
   }
-  // метод для компонентов
 
   // Миксины - отдельный столп бесполезности
   function mixin(obj, obj2, parent) {
