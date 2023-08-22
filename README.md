@@ -1,4 +1,4 @@
-# Dome-Library
+# Dome.js Framework
 Подключение:
 ```html
 <!-- через npm -->
