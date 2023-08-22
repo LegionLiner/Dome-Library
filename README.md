@@ -1,9 +1,12 @@
 # Dome-Library
 Подключение:
 ```html
-<script src="library.js"></script>
+<!-- через npm -->
+npm i @legionliner/dome.js
+
+<!-- через установку -->
+<script src="dome.js"></script>
 ```
-Да-да, пока только так.
 ## Синтаксис
 
 ```js
