@@ -1,12 +1,12 @@
-  let signals = {};
-  let fors = new Map();
-  let customs = new Map();
-  let custom = {};
-  let forsMaps = new Map();
-  let observed = new Map();
-  let forsSignals = new Map();
-  let customsSignals = {};
-  let cache = {};
+let signals = {};
+let fors = new Map();
+let customs = new Map();
+let custom = {};
+let forsMaps = new Map();
+let observed = new Map();
+let forsSignals = new Map();
+let customsSignals = {};
+let cache = {};
 
 // Начало самой библиотеки
 const Dome = function (el = '', data = '') {
@@ -15,11 +15,13 @@ const Dome = function (el = '', data = '') {
   }
   // хук beforeCreated
 
-    function errThrower(condition, exp) {
-      if (!condition) {
-        console.warn(exp)
-      }
+  function errThrower(condition, exp) {
+    if (!condition) {
+      console.warn(exp)
     }
+  }
+
+
 
   const isProxy = Symbol('isProxy');
   const isObserved = Symbol('isObserved');
@@ -106,15 +108,19 @@ const Dome = function (el = '', data = '') {
         return target[key];
       },
       set(target, key, value) {
-        const isPropBoolean = isBoolean(value);
+        if (!Number.isNaN(+value) && !isBoolean(value)) {
+          value = +value;
+        }
+        if (value == "true") {
+          value = true
+        }
+        if (value == "false") {
+          value = false
+        }
         if (datas.watch) {
           if (datas.watch[key]) {
-            if (typeof +value !== 'number' || isPropBoolean) {
               datas.watch[key].call(datas, target[key], value);
-            } else {
-              datas.watch[key].call(datas, target[key], +value);
             }
-          }
         }
         target[key] = value;
         notify(key);
@@ -449,12 +455,7 @@ const Dome = function (el = '', data = '') {
       }
     }
   }
-  function ifNode(node, observable, property) {
-    if (has(node, 'd-for')) {
-      return;
-    }
-    errThrower(findProperty(observable, property), `Не существует переменной с именем ${property} в
-    --> ${node.outerHTML}`)
+  function ifValueSearcher(observable, property, node, flag) {
     let value = property;
     let prop = property;
     if (index(property, '!')) {
@@ -465,16 +466,38 @@ const Dome = function (el = '', data = '') {
     } else {
       value = findValue(observable, property);
     }
+    if (!flag) {
+      observe(prop, () => {
+        ifNode(node, observable, property, true);
+      });
+    }
+    return {
+      value,
+      prop
+    };
+  }
+  function ifNode(node, observable, property, flag) {
+    if (has(node, 'd-for')) {
+      return;
+    }
+
+    errThrower(findProperty(observable, property), `Не существует переменной с именем ${property} в
+    --> ${node.outerHTML}`)
+    let ifValues = ifValueSearcher(observable, property, node, flag)
+    let value = ifValues.value;
+    let prop = ifValues.prop;
+
     if (!value) {
-      node.style.display = 'none';;
+      node.style.display = 'none';
       // если ложно - скрываем элемент и проверяем,
       // есть ли сосед с атрибутом d-else
       if (node.nextElementSibling) {
         if (has(node.nextElementSibling, 'd-else-if')) {
+          ifValueSearcher(observable, node.nextElementSibling.attributes['d-else-if'].value, node)
           ifNode(
             node.nextElementSibling,
             observable,
-            node.nextElementSibling.attributes['d-else-if'].value
+            node.nextElementSibling.attributes['d-else-if'].value, flag
           );
         } else if (has(node.nextElementSibling, 'd-else')) {
           node.nextElementSibling.style.display = '';
@@ -484,14 +507,7 @@ const Dome = function (el = '', data = '') {
       // иначе показываем элемент и ищем у соседа d-else,
       // если такой есть - скрываем его
       node.style.display = '';
-      if (node.nextElementSibling) {
-        ifHelper(node)
-      }
-    }
-    if (!signals[prop]) {
-      observe(prop, () => {
-        ifNode(node, observable, property);
-      });
+      ifHelper(node)
     }
   }
 
@@ -974,6 +990,12 @@ const Dome = function (el = '', data = '') {
   }
   function parseDOM(parentNode, observable) {
     // парс DOM, ищем все атрибуты в node
+    const ifs = qsa(`${parentNode} [d-if]`);
+    ifs.forEach((node) => {
+      errThrower(node.attributes['d-if'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+      ifNode(node, observable, node.attributes['d-if'].value);
+    });
+
     const bind = qsa(`${parentNode} [d-bind]`);
     bind.forEach((node) => {
       errThrower(node.attributes['d-bind'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
@@ -988,9 +1010,10 @@ const Dome = function (el = '', data = '') {
     const asHtml = qsa(`${parentNode} [d-html]`);
     once = qsa(`${parentNode} [d-once]`);
     nodes = qsa(`${parentNode} [d-text]`);
-    ifs = qsa(`${parentNode} [d-if]`);
     vm = qsa(`${parentNode} :not(input, button)`);
     model = qsa(`${parentNode} [d-model]`);
+    if (qsa(`${parentNode} [d-text]`).length) {
+    }
     // для кадого найденного элемента с атрибутом x вызываем функцию,
     // связанную c этим x атрибутом
 
@@ -1005,10 +1028,6 @@ const Dome = function (el = '', data = '') {
     model.forEach((node) => {
         errThrower(node.attributes['d-model'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
         syncSelect(node, observable, node.attributes['d-model'].value);
-    });
-    ifs.forEach((node) => {
-      errThrower(node.attributes['d-if'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
-      ifNode(node, observable, node.attributes['d-if'].value);
     });
     once.forEach((node) => {
       errThrower(node.attributes['d-once'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
