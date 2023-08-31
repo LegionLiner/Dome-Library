@@ -1,3 +1,12 @@
+let signals = {};
+  let fors = new Map();
+  let customs = new Map();
+  let custom = {};
+  let forsMaps = new Map();
+  let observed = new Map();
+  let forsSignals = new Map();
+  let customsSignals = {};
+  let cache = {};
 
 // Начало самой библиотеки
 const Dome = function (el = '', data = '') {
@@ -12,16 +21,6 @@ const Dome = function (el = '', data = '') {
     }
   }
 
-  let signals = {};
-  let fors = new Map();
-  let customs = new Map();
-  let custom = {};
-  let forsMaps = new Map();
-  let observed = new Map();
-  let forsSignals = new Map();
-  let customsSignals = {};
-  let cache = {};
-
   const isProxy = Symbol('isProxy');
   const isObserved = Symbol('isObserved');
   const descriptor = {
@@ -30,17 +29,10 @@ const Dome = function (el = '', data = '') {
     configurable: false,
   };
   const { isArray } = Array;
-  const { assign } = Object;
   const { defineProperty } = Object;
   const isObject = (val) => typeof val === 'object' && val !== null;
-  const objectToString = Object.prototype.toString;
-  const toTypeString = (val) => objectToString.call(val);
-  const isMap = (val) => toTypeString(val) === '[object Map]';
-  const isSet = (val) => toTypeString(val) === '[object Set]';
-  const isDate = (val) => val instanceof Date;
   const isFunction = (val) => typeof val === 'function';
   const isString = (val) => typeof val === 'string';
-  const isSymbol = (val) => typeof val === 'symbol';
   const has = (node, val) => node.hasAttribute(val);
   const index = (val, str) => val.indexOf(str) != -1;
   const indexOf = (val, str) => val.indexOf(str);
@@ -52,10 +44,6 @@ const Dome = function (el = '', data = '') {
   };
   const qs = (val) => document.querySelector(val);
   const qsa = (val) => document.querySelectorAll(val);
-  const toNumber = (val) => {
-    const n = parseFloat(val);
-    return isNaN(n) ? val : n;
-  };
   const month = [
     'Январь',
     'Февраль',
@@ -446,15 +434,15 @@ const Dome = function (el = '', data = '') {
     }
   }
 
-  function ifHelper(node) {
+  function ifHidder(node) {
     if (node.nextElementSibling) {
       if (has(node.nextElementSibling, 'd-else-if') || has(node.nextElementSibling, 'd-else')) {
         node.nextElementSibling.style.display = 'none';
-        ifHelper(node.nextElementSibling)
+        ifHidder(node.nextElementSibling)
       }
     }
   }
-  function ifValueSearcher(observable, property, node, flag) {
+  function ifValueSearcher(observable, property, node, flag, beenObserved) {
     let value = property;
     let prop = property;
     if (index(property, '!')) {
@@ -464,10 +452,12 @@ const Dome = function (el = '', data = '') {
       prop = prop.slice(indexOf(prop, '.') + 1, prop.length);
     } else {
       value = findValue(observable, property);
+      errThrower(findProperty(observable, property), `Не существует переменной с именем ${prop} в
+    --> ${node.outerHTML}`)
     }
     if (!flag) {
       observe(prop, () => {
-        ifNode(node, observable, property, true);
+        ifNode(node, observable, property, true, beenObserved);
       });
     }
     return {
@@ -475,28 +465,46 @@ const Dome = function (el = '', data = '') {
       prop
     };
   }
-  function ifNode(node, observable, property, flag) {
+  function ifHelper(node, observe, flag) {
+    let willObserve = observe ? observe : [];
+    if ((!flag) && node.nextElementSibling) {
+      if (has(node.nextElementSibling, "d-else-if")) {
+        willObserve.push(node.nextElementSibling.attributes["d-else-if"].value)
+        return ifHelper(node.nextElementSibling, willObserve, flag)
+      }
+    }
+    return {
+      willObserve,
+      flag: true
+    }
+  }
+  function ifNode(node, observable, property, flag, beenObserved) {
     if (has(node, 'd-for')) {
       return;
     }
-
-    errThrower(findProperty(observable, property), `Не существует переменной с именем ${property} в
-    --> ${node.outerHTML}`)
-    let ifValues = ifValueSearcher(observable, property, node, flag)
-    let value = ifValues.value;
-    let prop = ifValues.prop;
+    let needToObserve = ifHelper(node);
+    if (!beenObserved) {
+      needToObserve.willObserve.forEach((item, i) => {
+        observe(item, () => {
+          ifNode(node, observable, property, true, beenObserved);
+        });
+      })
+    }
+    beenObserved = needToObserve.flag
+    const values = ifValueSearcher(observable, property, node, flag, beenObserved);
+    const prop = values.prop;
+    const value = values.value;
 
     if (!value) {
       node.style.display = 'none';
       // если ложно - скрываем элемент и проверяем,
-      // есть ли сосед с атрибутом d-else
+      // есть ли сосед с атрибутами d-else-if или d-else
       if (node.nextElementSibling) {
         if (has(node.nextElementSibling, 'd-else-if')) {
-          ifValueSearcher(observable, node.nextElementSibling.attributes['d-else-if'].value, node)
           ifNode(
             node.nextElementSibling,
             observable,
-            node.nextElementSibling.attributes['d-else-if'].value, flag
+            node.nextElementSibling.attributes['d-else-if'].value, flag, beenObserved
           );
         } else if (has(node.nextElementSibling, 'd-else')) {
           node.nextElementSibling.style.display = '';
@@ -506,10 +514,10 @@ const Dome = function (el = '', data = '') {
       // иначе показываем элемент и ищем у соседа d-else,
       // если такой есть - скрываем его
       node.style.display = '';
-      ifHelper(node)
+      ifHidder(node)
     }
-  }
 
+  }
   function _anonimFor(node, observable, property, inner) {
     fors = new Map();
     const varName = property.slice(property.lastIndexOf(' ') + 1, property.length);
@@ -697,7 +705,7 @@ const Dome = function (el = '', data = '') {
     }
   }
   function syncClicks(node, observable, property, dForData) {
-    let hooks
+    let hooks;
     if (index(property, ":")) {
       hooks = clicksHelper(property)
       property = property.slice(indexOf(property, ":") + 2, property.length)
@@ -807,6 +815,8 @@ const Dome = function (el = '', data = '') {
     index(end, ';') ? (end = end.slice(0, indexOf(end, ';'))) : false;
     index(end, '**') ? (end = end.slice(0, indexOf(end, '**'))) : false;
     index(end, '*') ? (end = end.slice(0, indexOf(end, '**'))) : false;
+    index(end, '*') ? (end = end.slice(0, indexOf(end, ','))) : false;
+    index(end, '*') ? (end = end.slice(0, indexOf(end, ')'))) : false;
     set.add(end);
     if (index(slice, 'this.')) {
       nesting(slice, observable, set);
@@ -1390,4 +1400,5 @@ const Dome = function (el = '', data = '') {
   }, 1);
   // самовызываящаяся функция для убирания d-cloak
 };
+
 // Конец самой библиотеки
