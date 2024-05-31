@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <div class="app">
+        <input d-text="text">
+        <p d-text="text"></p>
+        <p d-text="x"></p>
+        <h2 d-text="area"></h2>
+        <hr>
+        <p d-text="obj.name"></p>
+    </div>
+    <script src="./dome.js"></script>
+
+    <script>
+        const app = new Dome('.app', {
+            text: 'bla bla',
+            x: 10,
+            y: 10,
+            obj: {
+                name: 'Ilya',
+                surname: 'Pidorov'
+            },
+            computed: {
+                area() {
+                    return this.x * this.y
+                }
+            },
+            watch: {
+                text() {
+                    this.x += 1
+                    this.y += 1
+                }
+            }
+        });
+    </script>
+    <!-- <script setup el=".app">
+        const text = ref('bla bla');
+
+        const x = ref(10);
+        const y = ref(10);
+        const area = computed(() => x.value * y.value);
+
+        watch(text, () => {
+            x.value += 1;
+            y.value += 1;
+        });
+
+        const obj = ref({
+            name: 'Ilya',
+            surname: 'Pidorov'
+        });
+    </script> -->
+</body>
+
+</html>

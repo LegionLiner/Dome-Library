@@ -1,22 +1,25 @@
 // Начало самой библиотеки
-const Dome = function (el = '', data = '') {
-  if (data.beforeCreated) {
-    data.beforeCreated();
-  }
-  // хук beforeCreated
 
+let Dome, ref, computed, watch;
+
+let signals = {};
+const isRef = Symbol('RefType');
+const isWatch = Symbol('WatchType');
+const isComputed = Symbol('ComputedType');
+
+(function () {
   function errThrower(condition, exp) {
     if (!condition) {
       console.warn(exp)
     }
   }
 
-  let signals = {};
   let fors = new Map();
   let customs = new Map();
   let observed = new Map();
   let customsSignals = {};
   let cache = {};
+  let isSetup = false;
 
   const isProxy = Symbol('isProxy');
   const isObserved = Symbol('isObserved');
@@ -145,16 +148,9 @@ const Dome = function (el = '', data = '') {
     gridautorows: "grid-auto-rows",
     gridautocolumns: "grid-auto-columns",
     boxsizing: "box-sizing"
-}
+  }
   // нужные константы.
 
-  this.node = el;
-  defineProperty(this, 'el', {
-    enumerable: false,
-    writable: true,
-    configurable: false,
-  });
-  defineProperty(this, 'node', descriptor);
   function makeProxy(datas) {
     const validator = {
       get(target, key) {
@@ -164,7 +160,7 @@ const Dome = function (el = '', data = '') {
         if (isObject(target[key])) {
           if (!target[key][isProxy]) {
             if (key == "customs") {
-                return target[key];
+              return target[key];
             }
             target[key] = new Proxy(target[key], validator);
             return target[key];
@@ -185,198 +181,20 @@ const Dome = function (el = '', data = '') {
         }
         if (datas.watch) {
           if (datas.watch[key]) {
-              datas.watch[key].call(datas, target[key], value);
-            }
+            datas.watch[key].call(datas, target[key], value);
+          }
+        }
+        if (target?.watchers?.length && (key !== '_value')) {
+          target.watchers.forEach(watcher => watcher.call(null, value));
         }
         target[key] = value;
-        notify(key);
+        if (target.__name__) notify(target.__name__);
+        else notify(key);
         return true;
       },
     };
     return new Proxy(datas, validator);
   }
-  this.props = {};
-  defineProperty(this, 'props', descriptor);
-  this.data = makeProxy(data);
-  // перезаписываем data, делая его прокси обьектом
-
-  for (const item in this.data) {
-    if (item == 'methods') {
-      for (const items in this.data.methods) {
-        defineProperty(this, items, {
-          get() {
-            return this.data.methods[items];
-          },
-
-          set(value) {
-            this.data.methods[items] = value;
-          },
-        });
-      }
-    } else if (item != 'computed') {
-      defineProperty(this, item, {
-        get() {
-          return this.data[item];
-        },
-
-        set(value) {
-          this.data[item] = value;
-        },
-      });
-    }
-  }
-  // укорачиваю синтаксис поиска
-
-  {
-    // методы фреймворка, для удобства разработки я их скрыл таким способом
-    this.find = (els) => {
-      const node = document.querySelector(els);
-      this.el = node;
-      return node;
-    };
-    defineProperty(this, 'find', descriptor);
-    // внутренняя функция поиска элемента
-    this.Hide = function () {
-      this.el.style.display = 'none';
-      return this;
-    };
-    defineProperty(this, 'Hide', descriptor);
-    // спрятать элемента
-    this.Show = function () {
-      this.el.style.display = '';
-      return this;
-    };
-    defineProperty(this, 'Show', descriptor);
-    // показать элемент
-    this.Toggle = function () {
-      this.el.style.display === 'none'
-        ? (this.el.style.display = '')
-        : (this.el.style.display = 'none');
-      return this;
-    };
-    defineProperty(this, 'Toggle', descriptor);
-    // переключить показывание/скрытие
-    this.Class = function (className) {
-      this.el.classList.add(className);
-      return this;
-    };
-    defineProperty(this, 'Class', descriptor);
-    // добавить класс
-    this.RemoveClass = function (className) {
-      this.el.classList.remove(className);
-      return this;
-    };
-    defineProperty(this, 'RemoveClass', descriptor);
-    // удалить класс
-    this.Text = function (text) {
-      this.el.textContent = text;
-      return this;
-    };
-    defineProperty(this, 'Text', descriptor);
-    // заменить текст
-    this.Append = function (text) {
-      this.el.textContent = `${this.el.textContent} ${text}`;
-      return this;
-    };
-    defineProperty(this, 'Append', descriptor);
-    // добавить текст в конец
-    this.Act = function (fun, event) {
-      this.el.addEventListener(event, fun);
-      return this;
-    };
-    defineProperty(this, 'Act', descriptor);
-    // добавить событие
-    this.Css = function (text) {
-      this.el.style.cssText = text;
-      return this;
-    };
-    defineProperty(this, 'Css', descriptor);
-    // добавить код CSS
-    this.Year = function () {
-      const now = new Date();
-      return now.getFullYear();
-    };
-    defineProperty(this, 'Year', descriptor);
-    // показать год
-    this.Month = function () {
-      const now = new Date().getMonth();
-      return month[now];
-    };
-    defineProperty(this, 'Month', descriptor);
-    // показать месяц
-    this.Day = function () {
-      const now = new Date();
-      const date = now.getDate();
-      return `Сегодня ${date} число, ${week[now.getDay()]}`;
-    };
-    defineProperty(this, 'Day', descriptor);
-    // показать день
-    this.Time = function () {
-      const now = new Date();
-      return `${now.getHours()}:${now.getMinutes()}`;
-    };
-    defineProperty(this, 'Time', descriptor);
-    // показать время
-    this.AddChild = function (el, text) {
-      if (this.el.firstChild) {
-        let timeEl = document.createElement(el);
-        timeEl.innerHTML = text;
-        this.el.append(timeEl);
-        timeEl = null;
-      }
-      return this;
-    };
-    defineProperty(this, 'AddChild', descriptor);
-    // добавить потомка
-    this.Tp = function (data) {
-      const x = data.toX;
-      const y = data.toY;
-      this.el.style.position = 'absolute';
-      this.el.style.top = `${x}px`;
-      this.el.style.left = `${y}px`;
-      return this;
-    };
-    defineProperty(this, 'Tp', descriptor);
-    // перемещение элемента на заданную позицию
-  }
-
-  this.destroy = () => {
-    if (this.data.destroyed) {
-      this.data.destroyed();
-    }
-    // хук destroyed
-    data.beforeCreated = null;
-    this.data = null;
-    for (let datas in this) {
-      datas = null;
-    }
-    this.el = null;
-    els = null;
-    this.template = '';
-    this.nodes = null;
-    this.customs = null;
-    this.props = null;
-    signals = null;
-    mustaches = null;
-    fors = null;
-    customs = null;
-    custom = null;
-    forsMaps = null;
-    observed = null;
-    forsSignals = null;
-    customsSignals = null;
-
-  };
-  // удаление приложения
-
-  if (this.data.created) {
-    this.data.created();
-  }
-  // хук created
-
-  mixin(this.data.mixins, this.data, this);
-  // начало реактивности
-  observeData(this.data, this.node, this);
 
   // Основные возможности приложения
   function syncNode(node, observable, property) {
@@ -384,12 +202,21 @@ const Dome = function (el = '', data = '') {
       return;
     }
     errThrower(findProperty(observable, property), `Не существует переменной с именем ${property} в
-    --> ${node.outerHTML}`)
-    node.textContent = cache[property] || findValue(observable, property);
-    observe(findProperty(observable, property), () => {
+    --> ${node.outerHTML}`);
+
+    if (!isSetup) {
+      node.textContent = cache[property] || findValue(observable, property);
+      observe(findProperty(observable, property), () => {
         node.textContent = findValue(observable, property);
-    });
-    // синхронизируем текст у node и уведомляем обработчик
+      });
+      // синхронизируем текст у node и уведомляем обработчик
+    } else {
+      node.textContent = cache[property] || findValue(observable, property);
+      observe(findProperty(observable, property), () => {
+        node.textContent = findValue(observable, property);
+      });
+      // синхронизируем текст у node и уведомляем обработчик
+    }
     node.removeAttribute('d-text');
     node.removeAttribute('s-text');
   }
@@ -399,16 +226,22 @@ const Dome = function (el = '', data = '') {
     }
     errThrower(findProperty(observable, property), `Не существует переменной с именем ${property} в
     --> ${node.outerHTML}`)
-    node.value = cache[property] || findValue(observable, property) || "";
-    // значение инпута
-    // равно значению property
-    node.addEventListener('input', () => {
-      observable[property] = node.value;
-    });
-    observe(findProperty(observable, property), () => {
-      node.value = findValue(observable, property);
-    });
-    // уведомляем обработчик
+      node.value = cache[property] || findValue(observable, property) || "";
+      // значение инпута
+      // равно значению property
+      if (!isSetup) {
+        node.addEventListener('input', () => {
+          observable[property] = node.value;
+        });
+      } else {
+        node.addEventListener('input', () => {
+          observable[property].value = node.value;
+        });
+      }
+      observe(findProperty(observable, property), () => {
+        node.value = findValue(observable, property);
+      });
+      // уведомляем обработчик
     node.removeAttribute('d-text');
     node.removeAttribute('s-text');
   }
@@ -418,11 +251,23 @@ const Dome = function (el = '', data = '') {
     }
     errThrower(findProperty(observable, property), `Не существует переменной с именем ${property} в
     --> ${node.outerHTML}`)
-    node.innerHTML = cache[property] || findValue(observable, property);
-    observe(
-      findProperty(observable, property),
-      () => (node.innerHTML = findValue(observable, property)),
-    );
+    if (!isSetup) {
+      node.innerHTML = cache[property] || findValue(observable, property) || "";
+      // значение инпута
+      // равно значению property
+      observe(findProperty(observable, property), () => {
+        node.innerHTML = findValue(observable, property);
+      });
+      // уведомляем обработчик
+    } else {
+      node.innerHTML = cache[property] || findValue(observable, property).value || "";
+      // значение инпута
+      // равно значению property
+      observe(findProperty(observable, property), () => {
+        node.innerHTML = findValue(observable, property).value;
+      });
+      // уведомляем обработчик
+    }
     // синхронизируем html у node и уведомляем обработчик
     node.removeAttribute('d-html');
   }
@@ -432,7 +277,11 @@ const Dome = function (el = '', data = '') {
     }
     errThrower(findProperty(observable, property), `Не существует переменной с именем ${property} в
     --> ${node.outerHTML}`)
-    node.textContent = cache[property] || findValue(observable, property);
+    if (!isSetup) {
+      node.textContent = cache[property] || findValue(observable, property);
+    } else {
+      node.textContent = cache[property] || findValue(observable, property).value;
+    }
     node.removeAttribute('d-once');
     // синхронизируем текст у node и удаляем атрибут
   }
@@ -472,7 +321,7 @@ const Dome = function (el = '', data = '') {
     if (!ifObserved) {
       for (let value of VMnesting(text, "", observable, node)) {
         observe(value, () => {
-              syncVM(node, observable, nodeInner, true);
+          syncVM(node, observable, nodeInner, true);
         });
       }
     }
@@ -595,6 +444,7 @@ const Dome = function (el = '', data = '') {
     }
 
   }
+
   function _anonimFor(node, observable, property, inner) {
     fors = new Map();
     const varName = property.slice(property.lastIndexOf(' ') + 1, property.length);
@@ -650,7 +500,7 @@ const Dome = function (el = '', data = '') {
     remove ? node.remove() : '';
     let specialIndexForSpecialClicks = 0;
     fors.forEach((item, node) => {
-      item = {[propsName]: item}
+      item = { [propsName]: item }
       item.specialIndexForSpecialClicks = specialIndexForSpecialClicks++;
       parseEL(node, item, observable);
     });
@@ -749,7 +599,7 @@ const Dome = function (el = '', data = '') {
     remove ? node.remove() : '';
     let specialIndexForSpecialClicks = 0;
     fors.forEach((item, node) => {
-      item = {[propsName]: item}
+      item = { [propsName]: item }
       defineProperty(item, 'specialIndexForSpecialClicks', {
         value: specialIndexForSpecialClicks++,
         configurable: true,
@@ -763,10 +613,10 @@ const Dome = function (el = '', data = '') {
         enumerable: false,
       });
       parseEL(node, item, observable);
-      });
-      specialIndexForSpecialClicks = 0;
-      fors = timeFors;
-      node.removeAttribute('d-for');
+    });
+    specialIndexForSpecialClicks = 0;
+    fors = timeFors;
+    node.removeAttribute('d-for');
   }
 
   function clicksHelper(property) {
@@ -883,25 +733,25 @@ const Dome = function (el = '', data = '') {
   function syncStyles(node) {
     node = document.querySelector(node);
     let parseStyles = node.querySelectorAll("[d-style]");
-        parseStyles.forEach((el) => {
-            let style = el.attributes["d-style"].value;
-            style = style.split(" ");
-            let stylesKeys = {};
-            style.forEach((el) => {
-                let key = el.slice(0, el.indexOf("-"));
-                if (keyStyleWords[key]) {
-                    let value = el.slice(el.indexOf("-") + 1);
-                    value = value.replaceAll(",", " ")
-                    stylesKeys[keyStyleWords[key]] = value;
-                }
-            })
-            for (let key in stylesKeys) {
-                el.style[key] = stylesKeys[key];
-            }
-        })
+    parseStyles.forEach((el) => {
+      let style = el.attributes["d-style"].value;
+      style = style.split(" ");
+      let stylesKeys = {};
+      style.forEach((el) => {
+        let key = el.slice(0, el.indexOf("-"));
+        if (keyStyleWords[key]) {
+          let value = el.slice(el.indexOf("-") + 1);
+          value = value.replaceAll(",", " ")
+          stylesKeys[keyStyleWords[key]] = value;
+        }
+      })
+      for (let key in stylesKeys) {
+        el.style[key] = stylesKeys[key];
+      }
+    })
   }
   // Вспомогательные методы
-  function nesting(value, observable, set) {
+  function nesting(value, set) {
     const start = indexOf(value, 'this.');
     const slice = value.slice(start + 5, value.length);
     const gap = slice.indexOf(' ');
@@ -916,7 +766,7 @@ const Dome = function (el = '', data = '') {
     index(end, '*') ? (end = end.slice(0, indexOf(end, ')'))) : false;
     set.add(end);
     if (index(slice, 'this.')) {
-      nesting(slice, observable, set);
+      nesting(slice, set);
     }
   }
   function VMnesting(text, observed, observable, node) {
@@ -948,14 +798,22 @@ const Dome = function (el = '', data = '') {
     if (index(value, '.')) {
       const obj = value.slice(0, indexOf(value, '.'));
       const nextValue = value.slice(indexOf(value, '.') + 1, value.length);
-      return findValue(observable[obj], nextValue);
+
+      if (!isSetup) {
+        return findValue(observable[obj], nextValue);
+      }
+      return findValue(observable[obj].value, nextValue);
     }
     try {
-      cache[value] = observable[value];
+      if (!isSetup) {
+        cache[value] = observable[value];
+      } else {
+        cache[value] = observable[value].value || observable[value];
+      }
     } catch (e) {
       return;
     }
-    return observable[value];
+    return observable[value].value || observable[value];
   }
   function findProperty(observable, value) {
     if (index(value, '.')) {
@@ -1036,7 +894,6 @@ const Dome = function (el = '', data = '') {
 
       node.classList.remove(random);
       bind.forEach((node) => {
-        console.log(node);
         errThrower(node.attributes['d-bind'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
         syncBind(node, observable, node.attributes['d-bind'].value);
       });
@@ -1131,8 +988,8 @@ const Dome = function (el = '', data = '') {
       }
     });
     model.forEach((node) => {
-        errThrower(node.attributes['d-model'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
-        syncSelect(node, observable, node.attributes['d-model'].value);
+      errThrower(node.attributes['d-model'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+      syncSelect(node, observable, node.attributes['d-model'].value);
     });
     once.forEach((node) => {
       errThrower(node.attributes['d-once'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
@@ -1154,7 +1011,7 @@ const Dome = function (el = '', data = '') {
     });
     syncStyles(parentNode)
   }
-  function parseLocalDOM (node, observable) {
+  function parseLocalDOM(node, observable) {
     const bind = qsa(`${node} [s-bind]`);
     bind.forEach((node) => {
       errThrower(node.attributes['s-bind'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
@@ -1198,8 +1055,8 @@ const Dome = function (el = '', data = '') {
       syncAsHtml(node, observable, node.attributes['s-html'].value);
     });
     model.forEach((node) => {
-        errThrower(node.attributes['s-model'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
-        syncSelect(node, observable, node.attributes['s-model'].value);
+      errThrower(node.attributes['s-model'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+      syncSelect(node, observable, node.attributes['s-model'].value);
     });
     vm.forEach((node) => {
       if (index(node.textContent, '{{')) {
@@ -1242,12 +1099,12 @@ const Dome = function (el = '', data = '') {
     // вызываем все обработчики, которые
     // следят за данным свойством
   }
-  function makeComputed(obj, key, customs) {
+  function makeComputed(obj, key, app) {
     const val = obj[key];
     const set = new Set();
     // Set не пропустит повторяющиеся значения, выходящие из функции nesting
     for (const variable in val) {
-      nesting(val[variable].toString(), obj, set);
+      nesting(val[variable].toString(), set);
       // из функции выбираем свойства, которые должны отслеживаться
       // и изменять computed свойство
       for (const el of set) {
@@ -1264,13 +1121,13 @@ const Dome = function (el = '', data = '') {
         get() {
           return val[variable].call(obj);
         },
-        set() {},
+        set() { },
       });
-      defineProperty(customs, variable, {
+      defineProperty(app, variable, {
         get() {
           return val[variable].call(obj);
         },
-        set() {},
+        set() { },
       });
     }
   }
@@ -1291,22 +1148,55 @@ const Dome = function (el = '', data = '') {
         parseDOM(item, obj);
       });
     } else {
-        parseDOM(node, obj);
+      parseDOM(node, obj);
     }
     parseCustoms(obj, obj[customKey])
-     // и парсим DOM в первый раз, отрисовывая
-     // все реактивные свойства
+    // и парсим DOM в первый раз, отрисовывая
+    // все реактивные свойства
   }
+  function observeSetup(node, setup) {
+    for (const key in setup) {
+      defineProperty(setup[key], '__name__', {
+        get() {
+          return key;
+        },
+        set() {},
+      });
 
-  if (this.data.reactive) {
-    this.data.reactive();
+      if (setup[key].__type__ === isRef) {
+        setup[key] = makeProxy(setup[key]);
+        defineProperty(setup[key], 'value', {
+          get() {
+            return setup[key]._value;
+          },
+          set(value) {
+            setup[key]._value = value;
+            notify(key);
+            return true;
+          },
+        });
+      } else if (setup[key].__type__ === isComputed) {
+        for (const el of setup[key].__deps__) {
+          observe(el, () => {
+            notify(key);
+          });
+        }
+      }
+    }
+
+    if (isArray(node)) {
+      node.forEach((item) => {
+        parseDOM(item, setup);
+      });
+    } else {
+      parseDOM(node, setup);
+    }
   }
-  // хук реактивности, реактивность готова
 
   // Методы для кастом компонентов
   function syncLocalValue(node, observable, property) {
     errThrower(findProperty(observable, property), `Не существует переменной с именем ${property} в
-    --> ${node.outerHTML}`)
+      --> ${node.outerHTML}`)
     node.value = findValue(observable, property);
     node.addEventListener('input', () => {
       observable[property] = node.value;
@@ -1322,7 +1212,7 @@ const Dome = function (el = '', data = '') {
     let args = extractArguments(property, observable, node)
     let f = property.slice(0, indexOf(property, "("))
     errThrower(observable.methods[f], `Не существует метода с именем ${property} в
-    --> ${node.outerHTML}`)
+      --> ${node.outerHTML}`)
 
     node.addEventListener(hooks.e, (event) => {
       if (hooks.c) {
@@ -1358,7 +1248,7 @@ const Dome = function (el = '', data = '') {
             customData[prop] = observable[prop];
             observe(prop, () => {
               customData[prop] = observable[prop]
-          })
+            })
           }
         }
       }
@@ -1384,7 +1274,7 @@ const Dome = function (el = '', data = '') {
 
         connectedCallback() {
           for (let attr of this.attributes) {
-            this.removeAttribute(attr.name)
+            // this.removeAttribute(attr.name)
           }
           this.innerHTML = template;
           customs.set(this, customData);
@@ -1399,26 +1289,9 @@ const Dome = function (el = '', data = '') {
         customElements.define(custom, customConstructor);
       } catch (e) {
         errThrower(false, `      Невозможно обьявить компонент с именем ${custom}, это имя является невалидным
-        ${e}`)
+          ${e}`)
       }
     }
-  }
-  this.custom = function(allData) {
-    const template = allData.template;
-    delete allData.template
-    class customConstructor extends HTMLElement {
-      constructor() {
-        super();
-        this.data = allData;
-        this.data.el = qs(this.name);
-        this.data = makeProxy(this.data);
-        delete this.data.props
-        if (this.data.created) {
-          this.data.created()
-        }
-      }
-    }
-    customElements.define(allData.name, customConstructor);
   }
 
   // Миксины - отдельный столп бесполезности
@@ -1498,20 +1371,305 @@ const Dome = function (el = '', data = '') {
     }
   }
 
-  if (this.data.mounted) {
-    this.data.mounted();
-  }
-  // хук mounted, выполняется сразу при готовности приложения
+  Dome = function (el = '', data = {}) {
+    if (data.beforeCreated) {
+      data.beforeCreated();
+    }
+    // хук beforeCreated
 
-  setTimeout(() => {
-    const elem = this.find(el);
-    if (elem) {
-      if (has(elem, 'd-cloak')) {
-        elem.removeAttribute('d-cloak');
+    this.node = el;
+    defineProperty(this, 'el', {
+      enumerable: false,
+      writable: true,
+      configurable: false,
+    });
+    defineProperty(this, 'node', descriptor);
+
+    this.props = {};
+    defineProperty(this, 'props', descriptor);
+
+    if (data.setup && isFunction(data.setup)) {
+      isSetup = true;
+      const setup = data.setup();
+      observeSetup(this.node, setup);
+      return;
+    }
+    this.data = makeProxy(data);
+    // перезаписываем data, делая его прокси обьектом
+
+    for (const item in this.data) {
+      if (item == 'methods') {
+        for (const items in this.data.methods) {
+          defineProperty(this, items, {
+            get() {
+              return this.data.methods[items];
+            },
+
+            set(value) {
+              this.data.methods[items] = value;
+            },
+          });
+        }
+      } else if (item != 'computed') {
+        defineProperty(this, item, {
+          get() {
+            return this.data[item];
+          },
+
+          set(value) {
+            this.data[item] = value;
+          },
+        });
       }
     }
-  }, 1);
-  // самовызываящаяся функция для убирания d-cloak
-};
+    // укорачиваю синтаксис поиска
 
+    {
+      // методы фреймворка, для удобства разработки я их скрыл таким способом
+      this.find = (els) => {
+        const node = document.querySelector(els);
+        this.el = node;
+        return node;
+      };
+      defineProperty(this, 'find', descriptor);
+      // внутренняя функция поиска элемента
+      this.Hide = function () {
+        this.el.style.display = 'none';
+        return this;
+      };
+      defineProperty(this, 'Hide', descriptor);
+      // спрятать элемента
+      this.Show = function () {
+        this.el.style.display = '';
+        return this;
+      };
+      defineProperty(this, 'Show', descriptor);
+      // показать элемент
+      this.Toggle = function () {
+        this.el.style.display === 'none'
+          ? (this.el.style.display = '')
+          : (this.el.style.display = 'none');
+        return this;
+      };
+      defineProperty(this, 'Toggle', descriptor);
+      // переключить показывание/скрытие
+      this.Class = function (className) {
+        this.el.classList.add(className);
+        return this;
+      };
+      defineProperty(this, 'Class', descriptor);
+      // добавить класс
+      this.RemoveClass = function (className) {
+        this.el.classList.remove(className);
+        return this;
+      };
+      defineProperty(this, 'RemoveClass', descriptor);
+      // удалить класс
+      this.Text = function (text) {
+        this.el.textContent = text;
+        return this;
+      };
+      defineProperty(this, 'Text', descriptor);
+      // заменить текст
+      this.Append = function (text) {
+        this.el.textContent = `${this.el.textContent} ${text}`;
+        return this;
+      };
+      defineProperty(this, 'Append', descriptor);
+      // добавить текст в конец
+      this.Act = function (fun, event) {
+        this.el.addEventListener(event, fun);
+        return this;
+      };
+      defineProperty(this, 'Act', descriptor);
+      // добавить событие
+      this.Css = function (text) {
+        this.el.style.cssText = text;
+        return this;
+      };
+      defineProperty(this, 'Css', descriptor);
+      // добавить код CSS
+      this.Year = function () {
+        const now = new Date();
+        return now.getFullYear();
+      };
+      defineProperty(this, 'Year', descriptor);
+      // показать год
+      this.Month = function () {
+        const now = new Date().getMonth();
+        return month[now];
+      };
+      defineProperty(this, 'Month', descriptor);
+      // показать месяц
+      this.Day = function () {
+        const now = new Date();
+        const date = now.getDate();
+        return `Сегодня ${date} число, ${week[now.getDay()]}`;
+      };
+      defineProperty(this, 'Day', descriptor);
+      // показать день
+      this.Time = function () {
+        const now = new Date();
+        return `${now.getHours()}:${now.getMinutes()}`;
+      };
+      defineProperty(this, 'Time', descriptor);
+      // показать время
+      this.AddChild = function (el, text) {
+        if (this.el.firstChild) {
+          let timeEl = document.createElement(el);
+          timeEl.innerHTML = text;
+          this.el.append(timeEl);
+          timeEl = null;
+        }
+        return this;
+      };
+      defineProperty(this, 'AddChild', descriptor);
+      // добавить потомка
+      this.Tp = function (data) {
+        const x = data.toX;
+        const y = data.toY;
+        this.el.style.position = 'absolute';
+        this.el.style.top = `${x}px`;
+        this.el.style.left = `${y}px`;
+        return this;
+      };
+      defineProperty(this, 'Tp', descriptor);
+      // перемещение элемента на заданную позицию
+    }
+
+    this.destroy = () => {
+      if (this.data.destroyed) {
+        this.data.destroyed();
+      }
+      // хук destroyed
+      data.beforeCreated = null;
+      this.data = null;
+      for (let datas in this) {
+        datas = null;
+      }
+      this.el = null;
+      els = null;
+      this.template = '';
+      this.nodes = null;
+      this.customs = null;
+      this.props = null;
+      signals = null;
+      mustaches = null;
+      fors = null;
+      customs = null;
+      custom = null;
+      forsMaps = null;
+      observed = null;
+      forsSignals = null;
+      customsSignals = null;
+
+    };
+    // удаление приложения
+
+    if (this.data.created) {
+      this.data.created();
+    }
+    // хук created
+
+    mixin(this.data.mixins, this.data, this);
+    // начало реактивности
+    observeData(this.data, this.node, this);
+
+
+    if (this.data.reactive) {
+      this.data.reactive();
+    }
+    // хук реактивности, реактивность готова
+
+    this.custom = function (allData) {
+      const template = allData.template;
+      delete allData.template
+      class customConstructor extends HTMLElement {
+        constructor() {
+          super();
+          this.data = allData;
+          this.data.el = qs(this.name);
+          this.data = makeProxy(this.data);
+          delete this.data.props
+          if (this.data.created) {
+            this.data.created()
+          }
+        }
+      }
+      customElements.define(allData.name, customConstructor);
+    }
+
+
+    if (this.data.mounted) {
+      this.data.mounted();
+    }
+    // хук mounted, выполняется сразу при готовности приложения
+
+    setTimeout(() => {
+      const elem = this.find(el);
+      if (elem) {
+        if (has(elem, 'd-cloak')) {
+          elem.removeAttribute('d-cloak');
+        }
+      }
+    }, 1);
+    // самовызываящаяся функция для убирания d-cloak
+  };
+
+  ref = function (data) {
+    return ({
+      __type__: isRef,
+      watchers: [],
+      _value: data
+    })
+  };
+  watch = function (prop, method) {
+    prop.watchers.push(method);
+  };
+  computed = function (method) {
+    const set = new Set();
+    method.toString().split(' ').filter(el => {
+      return el.includes('value');
+    }).forEach(el => {
+      set.add(el.slice().slice(0, -6));
+    });
+
+    const val = {
+      __type__: isComputed,
+      __deps__: set,
+    };
+
+    defineProperty(val, 'value', {
+      get() {
+        return method();
+      },
+      set() {},
+    });
+
+    return val;
+  };
+
+})()
+
+console.debug('Dome.js загружен.')
 // Конец самой библиотеки
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (document.querySelector('[setup]')) {
+    const textContent = document.querySelector('[setup]').textContent;
+    const properties = []
+    textContent.replaceAll('=', '').replaceAll('computed', 'ref').split('ref').forEach(el => {
+      const isConst = el.trim().indexOf('const');
+      properties.push(el.trim().slice(isConst + 5).split('  ')[0].trim());
+    });
+
+    eval(`
+      new Dome('${document.querySelector('[setup]').attributes.el.value}', {
+        setup() {
+          ${textContent}
+          return { ${properties} }
+        }
+      })
+    `)
+  }
+});
