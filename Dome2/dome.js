@@ -5,12 +5,16 @@ import { makeProxy } from "./reactivity/proxy.js";
 import { ref } from "./reactivity/ref.js";
 import { watch } from "./reactivity/watch.js";
 import { computed } from "./reactivity/computed.js";
+import { method } from "./reactivity/method.js";
+import { mount } from "./composition/mount.js";
 
 export let Dome;
 export {
     ref,
     watch,
-    computed
+    computed,
+    method,
+    mount,
 }
 
 (function () {

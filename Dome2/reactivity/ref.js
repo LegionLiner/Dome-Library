@@ -1,11 +1,13 @@
 import { defineProperty, uuid } from "../utilities/index.js";
 import { weakProxy } from "./proxy.js";
+import { addData } from "../composition/instance.js";
+import { notify } from "./signals.js";
 
 export const isRef = Symbol('RefType');
 
 export const globalRefs = {};
 
-export function ref(data) {
+export function ref(name, data) {
   const id = uuid();
 
   let refValue = {
@@ -36,11 +38,17 @@ export function ref(data) {
     },
     set(value) {
       refValue._value = value;
+
+      notify(id);
+      
       return true;
     },
   });
 
   refValue = weakProxy(refValue, id);
   globalRefs[id] = refValue;
+
+  addData(name, refValue);
+
   return refValue;
 };

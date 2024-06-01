@@ -23,8 +23,16 @@ export function errThrower(err, message) {
 
 export function findProperty(observable, value) {
     if (index(value, '.')) {
-        const value = value.slice(value.lastIndexOf(".") + 1, value.length);
+        return value.slice(value.lastIndexOf(".") + 1, value.length);
+    }
+    if (typeof observable[value] !== "undefined") {
         return value;
+    }
+}
+
+export function findPropertyComposition(observable, value) {
+    if (index(value, '.')) {
+        return value.slice(value.indexOf(".") + 1, value.length);
     }
     if (typeof observable[value] !== "undefined") {
         return value;
@@ -33,13 +41,24 @@ export function findProperty(observable, value) {
 
 export function findValue(observable, value) {
     if (index(value, '.')) {
-        const value = value.slice(0, indexOf(value, '.'));
+        const val = value.slice(0, indexOf(value, '.'));
         const nextValue = value.slice(indexOf(value, '.') + 1, value.length);
 
-        return findValue(observable[value], nextValue);
+        return findValue(observable[val], nextValue);
     }
 
     return observable[value];
+}
+
+export function findValueComposition(observable, value) {
+    if (index(value, '.')) {
+        const val = value.slice(0, indexOf(value, '.'));
+        const nextValue = value.slice(indexOf(value, '.') + 1, value.length);
+
+        return findValue(observable[val].value, nextValue);
+    }
+
+    return observable[value].value;
 }
 
 export function nesting(value, set) {
@@ -65,4 +84,14 @@ export function uuid() {
     return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c =>
         (+c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> +c / 4).toString(16)
     );
+}
+
+export function findId(observable, value) {
+    if (index(value, '.')) {
+        const val = value.slice(0, value.indexOf("."))
+        return observable[val].id;
+    }
+    if (typeof observable[value] !== "undefined") {
+        return observable[value].id;
+    }
 }

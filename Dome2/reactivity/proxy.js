@@ -1,6 +1,7 @@
 import { notify } from "./signals.js";
 import { defineProperty, isObject } from "../utilities/index.js";
 import { globalRefs } from "./ref.js";
+import { instance } from "../composition/instance.js";
 
 export function makeProxy(data) {
     const validator = {
@@ -23,7 +24,7 @@ export function makeProxy(data) {
 export function weakProxy(data, id) {
     const validator = {
         get(target, key) {
-            if (isObject(target[key]) && !target[key].id && key !== 'watchers') {
+            if (isObject(target[key]) && (!target[key].id) && (key !== 'watchers')) {
                 target[key].id = id;
                 defineProperty(target[key], 'id', {
                     writable: false,
@@ -37,11 +38,9 @@ export function weakProxy(data, id) {
             return target[key];
         },
         set(target, key, value) {
-            if (key === '_value') return;
-
             target[key] = value;
 
-            globalRefs[target.id].watchers.forEach(watcher => watcher.call(null, value));
+            globalRefs[target.id]?.watchers.forEach(watcher => watcher.call(null, value));
             notify(target.id);
 
             return true;

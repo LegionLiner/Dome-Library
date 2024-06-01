@@ -7,7 +7,28 @@
 </head>
 <body>
     <div class="app">
+        <p>{{ select }}</p>
+        <input d-text="model">
+        <p d-text="model"></p>
+
+        <div d-html="text.somedata"></div>
+        <p d-once="text.deep.deepBla"></p>
+
+        <div>
+            <p d-text="x"></p>
+            <p d-text="y"></p>
+            <p d-text="area.val"></p>
+        </div>
+
         <button d-on="click: reverse">Click</button>
+
+        <div>
+            <select d-model="select">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+            </select>
+        </div>
     </div>
     <script src="./dome.js" type="module"></script>
     <script src="./script.js" type="module"></script>

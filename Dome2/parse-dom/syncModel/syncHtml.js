@@ -1,29 +1,38 @@
-import { has, errThrower, findProperty, findValue } from "../../utilities/index.js";
+import { has, errThrower, findProperty, findValue, findValueComposition, findPropertyComposition, findId } from "../../utilities/index.js";
+import { isInstance } from "../../composition/instance.js";
 import { observe } from "../../reactivity/signals.js";
 
 export function syncAsHtml(node, observable, property) {
     if (has(node, 'd-for')) {
         return;
     }
-    errThrower(findProperty(observable, property), `Не существует переменной с именем ${property} в
-    --> ${node.outerHTML}`)
-    if (!isSetup) {
-        node.innerHTML = findValue(observable, property) || "";
-        // значение инпута
-        // равно значению property
-        observe(findProperty(observable, property), () => {
-            node.innerHTML = findValue(observable, property);
-        });
-        // уведомляем обработчик
+    if (isInstance) {
+        syncAsHtmlCompositon(node, observable, property);
     } else {
-        node.innerHTML = findValue(observable, property).value || "";
-        // значение инпута
-        // равно значению property
-        observe(findProperty(observable, property), () => {
-            node.innerHTML = findValue(observable, property).value;
-        });
-        // уведомляем обработчик
+        syncAsHtmlOption(node, observable, property);
     }
-    // синхронизируем html у node и уведомляем обработчик
+
     node.removeAttribute('d-html');
+}
+
+function syncAsHtmlCompositon(node, observable, property) {
+    errThrower(findPropertyComposition(observable, property), `Не существует переменной с именем ${property} в
+    --> ${node.outerHTML}`);
+
+    node.innerHTML = findValueComposition(observable, property) || "";
+
+    observe(findId(observable, property), () => {
+        node.innerHTML = findValueComposition(observable, property);
+    });
+}
+
+function syncAsHtmlOption(node, observable, property) {
+    errThrower(findProperty(observable, property), `Не существует переменной с именем ${property} в
+    --> ${node.outerHTML}`);
+
+    node.innerHTML = findValue(observable, property) || "";
+
+    observe(findProperty(observable, property), () => {
+        node.innerHTML = findValue(observable, property);
+    });
 }
