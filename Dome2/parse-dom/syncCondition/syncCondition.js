@@ -1,4 +1,5 @@
-import { has, index, indexOf, errThrower, findProperty, findValue } from "../../utilities/index.js";
+import { has, index, indexOf, errThrower, findProperty, findValue, findValueComposition, findPropertyComposition, findId } from "../../utilities/index.js";
+import { isInstance } from "../../composition/instance.js";
 import { observe } from "../../reactivity/signals.js";
 
 function ifHidder(node) {
@@ -13,19 +14,38 @@ function ifValueSearcher(observable, property, node, flag, beenObserved) {
     let value = property;
     let prop = property;
     if (index(property, '!')) {
-        prop = findProperty(observable, property.slice(1, property.length));
-        value = findValue(observable, prop);
+        if (isInstance) {
+            prop = findPropertyComposition(observable, property.slice(1, property.length));
+            value = findValueComposition(observable, prop);
+        } else {
+            prop = findProperty(observable, property.slice(1, property.length));
+            value = findValue(observable, prop);
+        }
         value = !value;
         prop = prop.slice(indexOf(prop, '.') + 1, prop.length);
     } else {
-        value = findValue(observable, property);
-        errThrower(findProperty(observable, property), `Не существует переменной с именем ${prop} в
-    --> ${node.outerHTML}`)
+        if (isInstance) {
+            errThrower(findPropertyComposition(observable, property), `Не существует переменной с именем ${prop} в
+            --> ${node.outerHTML}`);
+
+            value = findValueComposition(observable, property);
+        } else {
+            errThrower(findProperty(observable, property), `Не существует переменной с именем ${prop} в
+            --> ${node.outerHTML}`);
+
+            value = findValue(observable, property);
+        }
     }
     if (!flag) {
-        observe(prop, () => {
-            ifNode(node, observable, property, true, beenObserved);
-        });
+        if (isInstance) {
+            observe(findId(observable, prop), () => {
+                ifNode(node, observable, property, true, beenObserved);
+            });
+        } else {
+            observe(prop, () => {
+                ifNode(node, observable, property, true, beenObserved);
+            });
+        }
     }
     return {
         value,

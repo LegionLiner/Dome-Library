@@ -3,7 +3,7 @@ import { weakProxy } from "./proxy.js";
 import { addData } from "../composition/instance.js";
 import { notify } from "./signals.js";
 
-export const isRef = Symbol('RefType');
+export const RefType = Symbol('RefType');
 
 export const globalRefs = {};
 
@@ -11,7 +11,7 @@ export function ref(name, data) {
   const id = uuid();
 
   let refValue = {
-    __type__: isRef,
+    __type__: RefType,
     id,
     watchers: [],
     _value: data
@@ -52,3 +52,15 @@ export function ref(name, data) {
 
   return refValue;
 };
+
+export function isRef(value) {
+  return value?.__type__ === RefType;
+}
+
+export function toRaw(value) {
+  return deepClone(value._value)
+}
+
+function deepClone(value) {
+  return JSON.parse(JSON.stringify(value));
+}

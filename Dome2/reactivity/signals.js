@@ -1,4 +1,4 @@
-export const signals = {};
+export let signals = {};
 
 export function observe(property, callback) {
     if (!signals[property]) {
@@ -14,4 +14,8 @@ export function notify(signal) {
     signals[signal].forEach((callback) => {
         callback();
     });
+}
+
+export function clearSignals() {
+    signals = {};
 }

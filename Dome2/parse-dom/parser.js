@@ -5,11 +5,11 @@ import { syncBind, syncClicks, syncStyles } from "./syncBind/index.js";
 
 export function parseDOM(parentNode, observable) {
     // парс DOM, ищем все атрибуты в node
-    // const ifs = qsa(`${parentNode} [d-if]`);
-    // ifs.forEach((node) => {
-    //     errThrower(node.attributes['d-if'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
-    //     ifNode(node, observable, node.attributes['d-if'].value);
-    // });
+    const ifs = qsa(`${parentNode} [d-if]`);
+    ifs.forEach((node) => {
+        errThrower(node.attributes['d-if'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+        ifNode(node, observable, node.attributes['d-if'].value);
+    });
     // const dFor = qsa(`${parentNode} [d-for]`);
     // dFor.forEach((node) => {
     //     errThrower(node.attributes['d-for'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
@@ -59,5 +59,5 @@ export function parseDOM(parentNode, observable) {
         errThrower(node.attributes['d-on'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
         syncClicks(node, observable, node.attributes['d-on'].value);
     });
-    // syncStyles(parentNode)
+    syncStyles(parentNode)
 }

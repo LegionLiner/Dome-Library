@@ -2,20 +2,15 @@ import { defineProperty, errThrower } from "./utilities/index.js";
 import { parseDOM } from "./parse-dom/parser.js";
 import { makeComputed } from "./reactivity/computed.js";
 import { makeProxy } from "./reactivity/proxy.js";
-import { ref } from "./reactivity/ref.js";
+import { ref, isRef, toRaw } from "./reactivity/ref.js";
+import { readonly, isReadonly } from "./reactivity/readonly.js";
 import { watch } from "./reactivity/watch.js";
 import { computed } from "./reactivity/computed.js";
 import { method } from "./reactivity/method.js";
-import { mount } from "./composition/mount.js";
+import { mount, unmount } from "./composition/mount.js";
+import { onMounted, onUnmounted, onCreated } from "./composition/hooks/index.js";
 
 export let Dome;
-export {
-    ref,
-    watch,
-    computed,
-    method,
-    mount,
-}
 
 (function () {
     Dome = {
@@ -107,4 +102,20 @@ export {
 
         return instance;
     }
-})()
+})();
+
+export {
+    ref,
+    isRef,
+    toRaw,
+    watch,
+    computed,
+    method,
+    mount,
+    unmount,
+    readonly,
+    isReadonly,
+    onMounted,
+    onUnmounted,
+    onCreated,
+}
