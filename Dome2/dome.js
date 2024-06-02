@@ -11,6 +11,7 @@ import { mount, unmount } from "./composition/mount.js";
 import { onMounted, onUnmounted, onCreated } from "./composition/hooks/index.js";
 import { template } from "./component-api/template.js";
 import { defineComponent, defineComponents, Component } from "./component-api/define.js";
+import { props, emits } from "./component-api/macroses.js";
 
 export let Dome;
 
@@ -128,4 +129,7 @@ export {
     defineComponent,
     defineComponents,
     Component,
+
+    props,
+    emits,
 }

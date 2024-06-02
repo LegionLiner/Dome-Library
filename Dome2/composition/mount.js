@@ -37,6 +37,8 @@ export function unmount() {
 function parseComponents() {
     for (const component in instance.components) {
 
+        setProps(instance.components[component]);
+
         const $el = document.querySelector(component);
         errThrower($el, `Селектор ${component} не найден`);
 
@@ -44,6 +46,10 @@ function parseComponents() {
 
         parseDOM(component, instance.components[component]);
     }
+}
 
-    console.log(instance, 'instance');
+function setProps(component) {
+    for (const prop of component.props) {
+        component[prop] = instance[prop];
+    }
 }

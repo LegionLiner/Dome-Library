@@ -4,10 +4,13 @@ import {
     mount,
     template,
     defineComponent,
-    Component
+    Component,
+    props
 } from "./dome.js";
 
 defineComponent('d-component');
+
+props(['readonlyText'])
 
 const text = ref(["text"], 'text from component');
 
@@ -18,6 +21,7 @@ const reverse = method("reverse", () => {
 template(`
 <div d-text="text"></div>
 <button d-on="click: reverse">Click</button>
+<p>{{ readonlyText }} - readonlyText</p>
 `, "d-component");
 mount("d-component");
 

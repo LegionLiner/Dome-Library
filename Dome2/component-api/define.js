@@ -2,9 +2,11 @@ import { instance } from "../composition/instance.js";
 
 export function defineComponent(name) {
     instance.components[name] = {
+        parent: instance.activeComponent ? instance.components[instance.activeComponent] : instance,
         methods: {},
     };
     instance.activeComponent = name;
+
 }
 
 export function Component(name) {

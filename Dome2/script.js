@@ -13,7 +13,6 @@ import {
     onUnmounted,
     onCreated,
     template,
-    defineComponents,
 } from "./dome.js";
 import Component from './component.js';
 
