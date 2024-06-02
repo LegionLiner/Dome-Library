@@ -39,7 +39,7 @@ export function computed(name, method, deps) {
 
   observe(computed.id, () => {
     computed.watchers.forEach(watcher => watcher.call(null));
-  })
+  });
 
   deps.forEach(el => {
     observe(el.id, () => {
@@ -49,8 +49,6 @@ export function computed(name, method, deps) {
 
   defineProperty(computed, 'value', {
     get() {
-      // notify(computed.id);
-
       return method();
     },
     set() { },

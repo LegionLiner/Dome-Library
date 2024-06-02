@@ -1,6 +1,6 @@
 import { instance, createInstance } from "./instance.js";
 import { errThrower } from "../utilities/index.js";
-import { parseDOM } from "../parse-dom/parser.js";
+import { parseDOM, parseComponentDOM } from "../parse-dom/parser.js";
 import { useMounted, useCreated, useUnmounted } from "./hooks/index.js";
 import { clearSignals } from "../reactivity/signals.js";
 
@@ -10,10 +10,12 @@ export function mount(el) {
     }
 
     createInstance();
+
+    useCreated();
+
     const $el = document.querySelector(el);
     errThrower($el, `Селектор ${el} не найден`);
 
-    useCreated();
 
     instance.$el = $el;
     instance.$selector = el;
@@ -44,7 +46,7 @@ function parseComponents() {
 
         $el.innerHTML = instance.components[component].template;
 
-        parseDOM(component, instance.components[component]);
+        parseComponentDOM(component, instance.components[component]);
     }
 }
 

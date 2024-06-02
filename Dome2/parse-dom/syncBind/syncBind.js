@@ -1,62 +1,182 @@
-import { findValue, errThrower, indexOf, findProperty } from "../../utilities/index.js";
+import { indexOf, index, errThrower, findProperty, findValue, findValueComposition, findPropertyComposition, findId, isArray } from "../../utilities/index.js";
+import { isInstance } from "../../composition/instance.js";
 import { observe } from "../../reactivity/signals.js";
 
+// attr: value, [attr: value]: condition
+
 export function syncBind(node, observable, property) {
-    let attrName = property.slice(0, indexOf(property, ':'));
-    if (indexOf(property, ':') == -1) {
-        errThrower(false, `Атрибут d-bind должен содержать порядок "атрибут: условия" в узле
-      ${node.outerHTML}`)
-        attrName = property
+
+    if (isInstance) {
+        syncBindCompositon(node, observable, property);
+    } else {
+        syncBindOption(node, observable, property);
     }
-    let condition = property.slice(
-        indexOf(property, ':') + 2,
-        property.length,
-    );
-    if (index(condition, "[")) {
-        condition = condition.slice(1, condition.length - 1)
-        condition = condition.split(", ")
-        let names = []
-        if (condition.length === 1) {
-            names[0] = condition[0]
-            condition = findValue(observable, condition[0])
+
+    node.removeAttribute("d-bind");
+}
+
+function syncBindCompositon(node, observable, property, isObserved = false) {
+    if (!index(property, '[')) {
+        let attrName = property.slice(0, indexOf(property, ':')).trim();
+        let attrValue = property.slice(indexOf(property, ':') + 1).trim();
+
+        let value;
+        if (index(attrValue, '"') || index(attrValue, "'") || index(attrValue, '`')) {
+            value = attrValue.slice(1, attrValue.length - 1);
         } else {
-            condition = condition.reduce((a, b) => {
-                names.push(a)
-                names.push(b)
-                errThrower(findProperty(observable, a), `Не существует переменной с именем ${a} в узле
-          --> ${node.outerHTML}`)
-                errThrower(findProperty(observable, b), `Не существует переменной с именем ${b} в узле
-          --> ${node.outerHTML}`)
-                return `${findValue(observable, a)} ${findValue(observable, b)}`
-            })
+            errThrower(findPropertyComposition(observable, attrValue), `Не существует переменной с именем ${property} в
+        --> ${node.outerHTML}`);
+
+            value = findValueComposition(observable, attrValue);
         }
-        node.setAttribute(attrName, condition);
-        names.forEach((item) => {
-            if (!signals[findProperty(observable, item)]) {
-                observe(findProperty(observable, item), () => {
-                    syncBind(node, observable, property);
-                });
+
+        if ((typeof value === 'string') || (typeof value === 'number')) {
+            node.setAttribute(attrName, value);
+        } else if (typeof value === 'boolean') {
+            value ? node.setAttribute(attrName, '') : 'false';
+        } else if (typeof value === 'object') {
+            let res = '';
+            for (const [key, val] of Object.entries(value)) {
+                res += `${key}: ${val}; `;
             }
-        });
-    } else if (index(condition, "{")) {
-        condition = condition.slice(2, condition.length - 2)
-        condition = condition.split(", ")
-        let res = ""
-        condition.forEach((item) => {
-            let atrCond = item.slice(0, indexOf(item, ":"))
-            let state = item.slice(indexOf(item, ":") + 2, item.length)
-            errThrower(findProperty(observable, state), `Не существует переменной с именем ${state} в узле
-        --> ${node.outerHTML}`)
-            if (findValue(observable, state)) {
-                res += atrCond + " "
+            node.setAttribute(attrName, res);
+        } else if (isArray(value)) {
+            node.setAttribute(attrName, value.join(' '));
+        }
+
+        if (!isObserved) {
+            observe(findId(observable, attrValue), () => {
+                syncBindCompositon(node, observable, property, true);
+            });
+        }
+
+    } else {
+        let attrName = property.slice(indexOf(property, '[') + 1, indexOf(property, ':')).trim();
+        let attrValue = property.slice(indexOf(property, ':') + 1, indexOf(property, ']')).trim();
+        let condition = property.slice(indexOf(property, ']'));
+        condition = condition.slice(indexOf(condition, ':') + 1).trim();
+
+        const conditionValue = findValueComposition(observable, condition);
+
+        if (!conditionValue) {
+            node.removeAttribute(attrName);
+        } else {
+            let value;
+            if (index(attrValue, '"') || index(attrValue, "'") || index(attrValue, '`')) {
+                value = attrValue.slice(1, attrValue.length - 1);
+            } else {
+                errThrower(findPropertyComposition(observable, attrValue), `Не существует переменной с именем ${property} в
+            --> ${node.outerHTML}`);
+
+                value = findValueComposition(observable, attrValue);
             }
-            if (!signals[findProperty(observable, state)]) {
-                observe(findProperty(observable, state), () => {
-                    syncBind(node, observable, property);
-                });
+
+            if ((typeof value === 'string') || (typeof value === 'number')) {
+                node.setAttribute(attrName, value);
+            } else if (typeof value === 'boolean') {
+                value ? node.setAttribute(attrName, '') : 'false';
+            } else if (typeof value === 'object') {
+                let res = '';
+                for (const [key, val] of Object.entries(value)) {
+                    res += `${key}: ${val}; `;
+                }
+                node.setAttribute(attrName, res);
+            } else if (isArray(value)) {
+                node.setAttribute(attrName, value.join(' '));
             }
-        });
-        node.setAttribute(attrName, res)
+        }
+        if (!isObserved) {
+            observe(findId(observable, attrValue), () => {
+                syncBindCompositon(node, observable, property, true);
+            });
+
+            observe(findId(observable, condition), () => {
+                syncBindCompositon(node, observable, property, true);
+            });
+        }
+
     }
-    node.removeAttribute("d-bind")
+}
+
+function syncBindOption(node, observable, property, isObserved = false) {
+    if (!index(property, '[')) {
+        let attrName = property.slice(0, indexOf(property, ':')).trim();
+        let attrValue = property.slice(indexOf(property, ':') + 1).trim();
+
+        let value;
+        if (index(attrValue, '"') || index(attrValue, "'") || index(attrValue, '`')) {
+            value = attrValue.slice(1, attrValue.length - 1);
+        } else {
+            errThrower(findProperty(observable, attrValue), `Не существует переменной с именем ${property} в
+        --> ${node.outerHTML}`);
+
+            value = findValue(observable, attrValue);
+        }
+
+        if ((typeof value === 'string') || (typeof value === 'number')) {
+            node.setAttribute(attrName, value);
+        } else if (typeof value === 'boolean') {
+            value ? node.setAttribute(attrName, '') : 'false';
+        } else if (typeof value === 'object') {
+            let res = '';
+            for (const [key, val] of Object.entries(value)) {
+                res += `${key}: ${val}; `;
+            }
+            node.setAttribute(attrName, res);
+        } else if (isArray(value)) {
+            node.setAttribute(attrName, value.join(' '));
+        }
+
+        if (!isObserved) {
+            observe(findId(observable, attrValue), () => {
+                syncBindOption(node, observable, property, true);
+            });
+        }
+
+    } else {
+        let attrName = property.slice(indexOf(property, '[') + 1, indexOf(property, ':')).trim();
+        let attrValue = property.slice(indexOf(property, ':') + 1, indexOf(property, ']')).trim();
+        let condition = property.slice(indexOf(property, ']'));
+        condition = condition.slice(indexOf(condition, ':') + 1).trim();
+
+        const conditionValue = findValue(observable, condition);
+
+        if (!conditionValue) {
+            node.removeAttribute(attrName);
+        } else {
+            let value;
+            if (index(attrValue, '"') || index(attrValue, "'") || index(attrValue, '`')) {
+                value = attrValue.slice(1, attrValue.length - 1);
+            } else {
+                errThrower(findProperty(observable, attrValue), `Не существует переменной с именем ${property} в
+            --> ${node.outerHTML}`);
+
+                value = findValue(observable, attrValue);
+            }
+
+            if ((typeof value === 'string') || (typeof value === 'number')) {
+                node.setAttribute(attrName, value);
+            } else if (typeof value === 'boolean') {
+                value ? node.setAttribute(attrName, '') : 'false';
+            } else if (typeof value === 'object') {
+                let res = '';
+                for (const [key, val] of Object.entries(value)) {
+                    res += `${key}: ${val}; `;
+                }
+                node.setAttribute(attrName, res);
+            } else if (isArray(value)) {
+                node.setAttribute(attrName, value.join(' '));
+            }
+        }
+        if (!isObserved) {
+            observe(findProperty(observable, attrValue), () => {
+                syncBindOption(node, observable, property, true);
+            });
+
+            observe(findProperty(observable, condition), () => {
+                syncBindOption(node, observable, property, true);
+            });
+        }
+
+    }
 }

@@ -13,14 +13,13 @@ import {
 defineComponent('d-component');
 
 props(['readonlyText']);
-emits(['someEvent']);
+emits(['reverse']);
 
 const text = ref(["text"], 'text from component');
 
 const reverse = method("reverse", () => {
     text.value = text.value.split("").reverse().join("");
-
-    emit("someEvent");
+    emit('reverse');
 });
 
 template(`
@@ -30,4 +29,4 @@ template(`
 `, "d-component");
 mount("d-component");
 
-export default Component("d-component")
+export default Component("d-component");

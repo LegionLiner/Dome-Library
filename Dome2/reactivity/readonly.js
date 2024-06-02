@@ -1,5 +1,5 @@
 import { defineProperty, uuid } from "../utilities/index.js";
-import { addData } from "../composition/instance.js";
+import { addData, instance } from "../composition/instance.js";
 
 export const ReadOnlyType = Symbol('ReadOnlyType');
 
@@ -37,7 +37,7 @@ export function readonly(name, data) {
     },
   });
 
-  addData(name, readonlyValue);
+  addData(name, readonlyValue, instance.activeComponent);
 
   return readonlyValue;
 };

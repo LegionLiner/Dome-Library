@@ -6,7 +6,6 @@ export function defineComponent(name) {
         methods: {},
     };
     instance.activeComponent = name;
-
 }
 
 export function Component(name) {

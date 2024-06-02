@@ -15,39 +15,25 @@ import {
     template,
     onEmit,
 } from "./dome.js";
-import Component from './component.js';
-import Deep from './anotherComponent.js';
+import "./component.js";
 
-// onMounted(() => {
-//     console.log("onMounted works");
-// });
-
-// onCreated(() => {
-//     console.log("onCreated works");
-// });
-
-// onUnmounted(() => {
-//     console.log("onUnmounted works");
-// });
-
+readonly(["readonlyText"], "lol");
 const text = ref(["text"], {
     somedata: "bla bla",
     deep: {
         deepBla: "bla bla deep"
     }
 });
-
-const readonlyText = readonly(["readonlyText"], "lol");
-
-// console.log(isReadonly(readonlyText));
-// console.log(isRef(text));
-// console.log(toRaw(text));
-
 const x = ref(["x"], 5);
 const y = ref(["y"], 10);
-
-watch(text, () => {
-    // console.log("watch works on refs");
+const show = ref(["show"], false);
+ref(["model"], "");
+ref(["select"], 1);
+ref(["style"], {
+    'color': "red",
+    'font-size': "20px",
+    'font-weight': "bold",
+    'text-align': "center",
 });
 
 const area = computed(["area"], () => {
@@ -57,27 +43,28 @@ const area = computed(["area"], () => {
 }, [x, y]);
 
 watch(area, () => {
-    // console.log("watch works on computed");
+    if (area.value.val > 10000) {
+        show.value = true;
+    } else {
+        show.value = false;
+    }
 });
 
-const reverse = method("reverse", () => {
+method("reverse", () => {
+    show.value = !show.value;
     text.value.somedata = text.value.somedata.split("").reverse().join("");
 });
 
-const model = ref(["model"], "");
-const select = ref(["select"], 1);
-
-const show = ref(["show"], false);
-
-
-onEmit("someEvent", () => {
+onEmit("reverse", () => {
     console.log("onEmit works");
-})
+});
+
+
 template(`
-    <d-deep></d-deep>
+    <p d-bind="[style: style]: show">text</p>
     <d-component></d-component>
     <p>{{ select }}</p>
-    <input d-text="model">
+    <input d-text="style.color">
     <p d-text="model"></p>
 
     <div d-html="text.somedata"></div>
@@ -99,17 +86,5 @@ template(`
         </select>
     </div>
 `, ".app");
-mount(".app");
 
-reverse();
-
-setTimeout(() => {
-    text.value.somedata = "bla bla new";
-
-    x.value = 10;
-    show.value = true;
-}, 1000);
-
-// setTimeout(() => {
-//     unmount();
-// }, 3000);
+mount('.app');

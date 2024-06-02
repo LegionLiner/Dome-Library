@@ -4,9 +4,6 @@ import { ifNode } from "./syncCondition/syncCondition.js";
 import { syncBind, syncClicks, syncStyles } from "./syncBind/index.js";
 
 export function parseDOM(parentNode, observable) {
-
-    // console.log(parentNode, observable, 'observable');
-
     // парс DOM, ищем все атрибуты в node
     const ifs = qsa(`${parentNode} [d-if]`);
     ifs.forEach((node) => {
@@ -18,11 +15,11 @@ export function parseDOM(parentNode, observable) {
     //     errThrower(node.attributes['d-for'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
     //     syncFor(node, observable, node.attributes['d-for'].value);
     // });
-    // const bind = qsa(`${parentNode} [d-bind]`);
-    // bind.forEach((node) => {
-    //     errThrower(node.attributes['d-bind'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
-    //     syncBind(node, observable, node.attributes['d-bind'].value);
-    // });
+    const bind = qsa(`${parentNode} [d-bind]`);
+    bind.forEach((node) => {
+        errThrower(node.attributes['d-bind'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+        syncBind(node, observable, node.attributes['d-bind'].value);
+    });
 
     const asHtml = qsa(`${parentNode} [d-html]`);
     const once = qsa(`${parentNode} [d-once]`);
@@ -63,4 +60,84 @@ export function parseDOM(parentNode, observable) {
         syncClicks(node, observable, node.attributes['d-on'].value);
     });
     syncStyles(parentNode)
+}
+
+export function parseComponentDOM(parentNode, observable) {
+    const clonedNodes = [];
+
+    if (parentNode.startsWith('d-')) {
+        replaceNodes(document.querySelector(parentNode), parentNode, clonedNodes);
+    }
+
+    // парс DOM, ищем все атрибуты в node
+    const ifs = qsa(`[${parentNode}][d-if]`);
+    ifs.forEach((node) => {
+        errThrower(node.attributes['d-if'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+        ifNode(node, observable, node.attributes['d-if'].value);
+    });
+    // const dFor = qsa(`[${parentNode}][d-for]`);
+    // dFor.forEach((node) => {
+    //     errThrower(node.attributes['d-for'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+    //     syncFor(node, observable, node.attributes['d-for'].value);
+    // });
+    const bind = qsa(`[${parentNode}][d-bind]`);
+    bind.forEach((node) => {
+        errThrower(node.attributes['d-bind'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+        syncBind(node, observable, node.attributes['d-bind'].value);
+    });
+
+    const asHtml = qsa(`[${parentNode}][d-html]`);
+    const once = qsa(`[${parentNode}][d-once]`);
+    const nodes = qsa(`[${parentNode}][d-text]`);
+    const vm = qsa(`[${parentNode}]:not(input, button)`);
+    const model = qsa(`[${parentNode}][d-model]`);
+    // для кадого найденного элемента с атрибутом x вызываем функцию,
+    // связанную c этим x атрибутом
+
+    nodes.forEach((node) => {
+        errThrower(node.attributes['d-text'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+        if (node.nodeName == 'INPUT' || node.nodeName == "TEXTAREA") {
+            syncValue(node, observable, node.attributes['d-text'].value);
+        } else {
+            syncNode(node, observable, node.attributes['d-text'].value);
+        }
+    });
+    once.forEach((node) => {
+        errThrower(node.attributes['d-once'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+        syncOnce(node, observable, node.attributes['d-once'].value);
+    });
+    asHtml.forEach((node) => {
+        errThrower(node.attributes['d-html'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+        syncAsHtml(node, observable, node.attributes['d-html'].value);
+    });
+    vm.forEach((node) => {
+        if (index(node.textContent, '{{')) {
+            syncVM(node, observable);
+        }
+    });
+    model.forEach((node) => {
+        errThrower(node.attributes['d-model'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+        syncSelect(node, observable, node.attributes['d-model'].value);
+    });
+    const clicks = qsa(`[${parentNode}][d-on]`);
+    clicks.forEach((node) => {
+        errThrower(node.attributes['d-on'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+        syncClicks(node, observable, node.attributes['d-on'].value);
+    });
+
+
+    clonedNodes.forEach((node) => {
+        node.removeAttribute(parentNode);
+    });
+}
+
+function replaceNodes(el, attr, clonedNodes) {
+    const els = el.children;
+    for (const node of els) {
+        const clonedNode = node.cloneNode(true);
+        clonedNode.setAttribute(attr, '');
+        clonedNodes.push(clonedNode);
+    }
+
+    el.replaceWith(...clonedNodes);
 }
