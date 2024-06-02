@@ -13,8 +13,10 @@ import {
     onUnmounted,
     onCreated,
     template,
+    onEmit,
 } from "./dome.js";
 import Component from './component.js';
+import Deep from './anotherComponent.js';
 
 // onMounted(() => {
 //     console.log("onMounted works");
@@ -67,30 +69,35 @@ const select = ref(["select"], 1);
 
 const show = ref(["show"], false);
 
+
+onEmit("someEvent", () => {
+    console.log("onEmit works");
+})
 template(`
-<d-component></d-component>
-<p>{{ select }}</p>
-        <input d-text="model">
-        <p d-text="model"></p>
+    <d-deep></d-deep>
+    <d-component></d-component>
+    <p>{{ select }}</p>
+    <input d-text="model">
+    <p d-text="model"></p>
 
-        <div d-html="text.somedata"></div>
-        <p d-once="text.deep.deepBla"></p>
+    <div d-html="text.somedata"></div>
+    <p d-once="text.deep.deepBla"></p>
 
-        <div>
-            <p d-text="x"></p>
-            <p d-text="y"></p>
-            <input d-text="x"> * <input d-text="y"> = <p d-text="area.val"></p>
-        </div>
+    <div>
+        <p d-text="x"></p>
+        <p d-text="y"></p>
+        <input d-text="x"> * <input d-text="y"> = <p d-text="area.val"></p>
+    </div>
 
-        <button d-on="click: reverse">Click</button>
+    <button d-on="click: reverse">Click</button>
 
-        <div d-if="show">
-            <select d-model="select">
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-            </select>
-        </div>
+    <div d-if="show">
+        <select d-model="select">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+        </select>
+    </div>
 `, ".app");
 mount(".app");
 

@@ -3,6 +3,7 @@ export let instance = {
     $selector: null,
     methods: {},
     components: {},
+    onEmit: {},
 };
 export let isInstance = false;
 

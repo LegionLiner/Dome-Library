@@ -5,7 +5,7 @@ import { syncBind, syncClicks, syncStyles } from "./syncBind/index.js";
 
 export function parseDOM(parentNode, observable) {
 
-    console.log(parentNode, observable, 'observable');
+    // console.log(parentNode, observable, 'observable');
 
     // парс DOM, ищем все атрибуты в node
     const ifs = qsa(`${parentNode} [d-if]`);

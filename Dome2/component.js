@@ -5,17 +5,22 @@ import {
     template,
     defineComponent,
     Component,
-    props
+    props,
+    emits,
+    emit,
 } from "./dome.js";
 
 defineComponent('d-component');
 
-props(['readonlyText'])
+props(['readonlyText']);
+emits(['someEvent']);
 
 const text = ref(["text"], 'text from component');
 
 const reverse = method("reverse", () => {
     text.value = text.value.split("").reverse().join("");
+
+    emit("someEvent");
 });
 
 template(`

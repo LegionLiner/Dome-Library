@@ -2,13 +2,16 @@ import { instance } from "../composition/instance.js";
 
 export function props(props) {
     instance.components[instance.activeComponent].props = props;
-    // const component = instance.components[instance.activeComponent];
-    // console.log(component.parent);
-    // props.forEach(prop => {
-    //     component[prop] = component.parent[prop];
-    // });
 }
 
-export function emits(props) {
+export function emits(emits) {
     instance.components[instance.activeComponent].emits = emits;
+}
+
+export function emit(name) {
+    instance.onEmit[name]();
+}
+
+export function onEmit(name, method) {
+    instance.onEmit[name] = method;
 }
