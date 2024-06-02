@@ -1,4 +1,4 @@
-import { 
+import {
     ref,
     watch,
     computed,
@@ -11,8 +11,16 @@ import {
     isReadonly,
     onMounted,
     onUnmounted,
-    onCreated
+    onCreated,
+    template,
+    defineComponents,
 } from "./dome.js";
+
+import Component from './component.js';
+
+// defineComponents({
+//     Component
+// });
 
 // onMounted(() => {
 //     console.log("onMounted works");
@@ -38,7 +46,6 @@ const readonlyText = readonly(["readonlyText"], "lol");
 // console.log(isReadonly(readonlyText));
 // console.log(isRef(text));
 // console.log(toRaw(text));
-
 
 const x = ref(["x"], 5);
 const y = ref(["y"], 10);
@@ -66,10 +73,34 @@ const select = ref(["select"], 1);
 
 const show = ref(["show"], false);
 
+template(`
+<d-component></d-component>
+<p>{{ select }}</p>
+        <input d-text="model">
+        <p d-text="model"></p>
+
+        <div d-html="text.somedata"></div>
+        <p d-once="text.deep.deepBla"></p>
+
+        <div>
+            <p d-text="x"></p>
+            <p d-text="y"></p>
+            <input d-text="x"> * <input d-text="y"> = <p d-text="area.val"></p>
+        </div>
+
+        <button d-on="click: reverse">Click</button>
+
+        <div d-if="show">
+            <select d-model="select">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+            </select>
+        </div>
+`, ".app");
 mount(".app");
 
 reverse();
-
 
 setTimeout(() => {
     text.value.somedata = "bla bla new";

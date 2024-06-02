@@ -5,19 +5,25 @@ import { useMounted, useCreated, useUnmounted } from "./hooks/index.js";
 import { clearSignals } from "../reactivity/signals.js";
 
 export function mount(el) {
-    useCreated();
-    const $el = document.querySelector(el);
-
-    errThrower($el, `Селектор ${el} не найден`);
+    if (el.startsWith('d-')) {
+        return;
+    }
 
     createInstance();
+    const $el = document.querySelector(el);
+    errThrower($el, `Селектор ${el} не найден`);
+
+    useCreated();
 
     instance.$el = $el;
     instance.$selector = el;
+    instance.$el.innerHTML = instance.$template;
 
     parseDOM(el, instance);
+    parseComponents();
 
     useMounted();
+
 }
 
 export function unmount() {
@@ -26,4 +32,14 @@ export function unmount() {
     clearSignals();
 
     useUnmounted();
+}
+
+function parseComponents() {
+    for (const component in instance.components) {
+
+        const $el = document.querySelector(component);
+        errThrower($el, `Селектор ${component} не найден`);
+
+        $el.innerHTML = instance.components[component].template;
+    }
 }

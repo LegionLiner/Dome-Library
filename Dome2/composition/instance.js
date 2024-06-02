@@ -2,6 +2,7 @@ export let instance = {
     $el: null,
     $selector: null,
     methods: {},
+    components: {},
 };
 export let isInstance = false;
 

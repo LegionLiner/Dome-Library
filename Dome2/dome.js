@@ -9,6 +9,8 @@ import { computed } from "./reactivity/computed.js";
 import { method } from "./reactivity/method.js";
 import { mount, unmount } from "./composition/mount.js";
 import { onMounted, onUnmounted, onCreated } from "./composition/hooks/index.js";
+import { template } from "./component-api/template.js";
+import { defineComponent, defineComponents } from "./component-api/define.js";
 
 export let Dome;
 
@@ -107,15 +109,22 @@ export let Dome;
 export {
     ref,
     isRef,
+    readonly,
+    isReadonly,
     toRaw,
+
     watch,
     computed,
     method,
+
     mount,
     unmount,
-    readonly,
-    isReadonly,
+
     onMounted,
     onUnmounted,
     onCreated,
+
+    template,
+    defineComponent,
+    defineComponents,
 }
