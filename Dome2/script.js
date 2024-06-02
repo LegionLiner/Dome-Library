@@ -15,12 +15,7 @@ import {
     template,
     defineComponents,
 } from "./dome.js";
-
 import Component from './component.js';
-
-// defineComponents({
-//     Component
-// });
 
 // onMounted(() => {
 //     console.log("onMounted works");

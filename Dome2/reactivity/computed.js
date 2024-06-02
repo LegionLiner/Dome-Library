@@ -1,6 +1,6 @@
 import { defineProperty, nesting, isArray, uuid } from "../utilities/index.js";
 import { observe, notify } from "./signals.js";
-import { addData } from "../composition/instance.js";
+import { addData, instance } from "../composition/instance.js";
 
 export const isComputed = Symbol('ComputedType');
 
@@ -56,6 +56,6 @@ export function computed(name, method, deps) {
     set() { },
   });
 
-  addData(name, computed);
+  addData(name, computed, instance.activeComponent);
   return computed;
 };

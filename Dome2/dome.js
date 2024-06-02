@@ -10,7 +10,7 @@ import { method } from "./reactivity/method.js";
 import { mount, unmount } from "./composition/mount.js";
 import { onMounted, onUnmounted, onCreated } from "./composition/hooks/index.js";
 import { template } from "./component-api/template.js";
-import { defineComponent, defineComponents } from "./component-api/define.js";
+import { defineComponent, defineComponents, Component } from "./component-api/define.js";
 
 export let Dome;
 
@@ -127,4 +127,5 @@ export {
     template,
     defineComponent,
     defineComponents,
+    Component,
 }

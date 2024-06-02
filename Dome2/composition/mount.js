@@ -41,5 +41,9 @@ function parseComponents() {
         errThrower($el, `Селектор ${component} не найден`);
 
         $el.innerHTML = instance.components[component].template;
+
+        parseDOM(component, instance.components[component]);
     }
+
+    console.log(instance, 'instance');
 }
