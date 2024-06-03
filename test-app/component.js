@@ -6,8 +6,8 @@ import {
     defineComponent,
     defineComponents,
     Component,
-    props,
-    emits,
+    defineProps,
+    defineEmits,
     emit,
 } from "../Dome2/dome.js";
 import Deep from './anotherComponent.js';
@@ -17,8 +17,8 @@ defineComponents({
     Deep
 });
 
-props(['readonlyText']);
-emits(['reverse']);
+defineProps(['readonlyText']);
+defineEmits(['reverse']);
 
 const text = ref(["text"], 'text from component');
 ref(["someprop"], "someprop text");

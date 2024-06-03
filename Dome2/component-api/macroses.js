@@ -1,6 +1,6 @@
 import { instance } from "../composition/instance.js";
 
-export function props(props) {
+export function defineProps(props) {
     const objProps = {};
 
     for (const prop of props) {
@@ -11,7 +11,7 @@ export function props(props) {
     return instance.components[instance.activeComponent].props;
 }
 
-export function emits(emits) {
+export function defineEmits(emits) {
     instance.components[instance.activeComponent].emits = emits;
 }
 

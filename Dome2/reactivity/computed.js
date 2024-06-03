@@ -2,7 +2,7 @@ import { defineProperty, nesting, isArray, uuid } from "../utilities/index.js";
 import { observe, notify } from "./signals.js";
 import { addData, instance } from "../composition/instance.js";
 
-export const isComputed = Symbol('ComputedType');
+export const ComputedType = Symbol('ComputedType');
 
 export function makeComputed(computeds, instance) {
   const set = new Set();
@@ -33,7 +33,7 @@ export function makeComputed(computeds, instance) {
 export function computed(name, method, deps) {
   const computed = {
     id: uuid(),
-    __type__: isComputed,
+    __type__: ComputedType,
     watchers: [],
   };
 
@@ -57,3 +57,7 @@ export function computed(name, method, deps) {
   addData(name, computed, instance.activeComponent);
   return computed;
 };
+
+export function isComputed(value) {
+  return value?.__type__ === ComputedType;
+}

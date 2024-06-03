@@ -32,7 +32,7 @@ export function readonly(name, data) {
     get() {
       return readonlyValue._value;
     },
-    set() { 
+    set() {
       return true;
     },
   });

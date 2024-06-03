@@ -39,15 +39,9 @@ export function unmount() {
 function parseComponents() {
     for (const component in instance.components) {
         if (instance.components[component].parent.$el) {
-            setProps(instance.components[component], instance);
-
-            const $el = document.querySelector(component);
-            errThrower($el, `Селектор ${component} не найден`);
-
-            $el.innerHTML = instance.components[component].template;
-
-            parseComponentDOM(component, instance.components[component]);
-            parseChilds(instance.components[component]);
+            const countOfComponents = (instance.$el.innerHTML.split(component).length - 1) / 2;
+            replaceComponentName(instance, component, countOfComponents);
+            parseComponent(component, countOfComponents);
         }
     }
 }
@@ -61,7 +55,26 @@ function setProps(component, instance) {
     }
 }
 
+function parseComponent(name, count) {
+    for (let i = 0; i < count; i++) {
+        instance.activeComponent = name + '-' + (i + 1);
+        instance.components[name + '-' + (i + 1)].callback();
+
+        setProps(instance.components[name + '-' + (i + 1)], instance);
+
+        const $el = document.querySelector(name + '-' + (i + 1));
+        errThrower($el, `Селектор ${name + '-' + (i + 1)} не найден`);
+
+        $el.innerHTML = instance.components[name + '-' + (i + 1)].template;
+
+        parseComponentDOM(name + '-' + (i + 1), instance.components[name + '-' + (i + 1)]);
+        parseChilds(instance.components[name + '-' + (i + 1)]);
+        instance.activeComponent = null;
+    }
+}
+
 function parseChilds(component) {
+    console.log(component, 'component');
     for (const child in component.components) {
         setProps(component.components[child], component);
 
@@ -72,5 +85,29 @@ function parseChilds(component) {
 
         parseComponentDOM(child, component.components[child]);
         parseChilds(component.components[child]);
+    }
+}
+
+function replaceComponentName(parent, name, count) {
+    let inner = parent.$el.innerHTML;
+    let arr = [];
+    arr = inner.split(name);
+
+    for (let i = 0; i < arr.length - 1; i += 2) {
+        arr[i] = arr[i] + name + '-' + (i / 2 + 1);
+        arr[i + 1] = arr[i + 1] + name + '-' + (i / 2 + 1);
+    }
+    parent.$el.innerHTML = arr.join('');
+
+    parent.components[name].callback();
+
+    const callback = parent.components[name].callback;
+    delete parent.components[name].parent;
+    delete parent.components[name].callback;
+
+    for (let i = 0; i < count; i++) {
+        parent.components[name + '-' + (i + 1)] = structuredClone(parent.components[name]);
+        parent.components[name + '-' + (i + 1)].callback = callback;
+        parent.components[name + '-' + (i + 1)].parent = parent;
     }
 }

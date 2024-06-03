@@ -11,6 +11,7 @@ export function ref(name, data) {
   const id = uuid();
 
   let refValue = {
+    // component: instance.activeComponent,
     __type__: RefType,
     id,
     watchers: [],
@@ -40,7 +41,7 @@ export function ref(name, data) {
       refValue._value = value;
 
       notify(id);
-      
+
       return true;
     },
   });

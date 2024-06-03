@@ -1,10 +1,11 @@
 import { instance } from "../composition/instance.js";
 
-export function defineComponent(name) {
+export function defineComponent(callback, name) {
     instance.components[name] = {
         parent: instance.activeComponent ? instance.components[instance.activeComponent] : instance,
         methods: {},
         components: {},
+        callback,
     };
     instance.activeComponent = name;
 }
@@ -13,7 +14,7 @@ export function Component(name) {
     instance.activeComponent = null;
 
     return {
-        name: name
+        name,
     }
 }
 
