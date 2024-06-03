@@ -41,15 +41,12 @@ function parseComponents(inst) {
         if (inst.components[component].parent.$el) {
             const countOfComponents = (inst.$el.innerHTML.split(component).length - 1) / 2;
             if (countOfComponents) {
-               // console.log(component, 'top components');
                 replaceComponentName(inst, component, countOfComponents);
-                console.log(inst.components[component].template, 'dsfughdfiugh');
                 parseComponent(component, countOfComponents, inst);
             }
         } else {
             const countOfComponents = (inst.template.split(component).length - 1) / 2;
             if (countOfComponents) {
-                // console.log(component, 'inner components');
                 replaceComponentName(inst, component, countOfComponents);
                 parseComponent(component, countOfComponents, inst);
             }
@@ -67,17 +64,14 @@ function setProps(component, instance) {
 }
 
 function parseComponent(name, count, inst) {
-    console.log(inst.template, 'template');
     for (let i = 0; i < count; i++) {
         if (instance.activeComponent) {
             instance.activeComponent += `.${name + '-' + (i + 1)}`
         } else {
             instance.activeComponent = name + '-' + (i + 1);
         }
-        console.log(instance.activeComponent, 'parsing');
         
         inst.components[name + '-' + (i + 1)].callback();
-        console.log(document.body.innerHTML);
         
         setProps(inst.components[name + '-' + (i + 1)], inst);
         
@@ -86,7 +80,6 @@ function parseComponent(name, count, inst) {
         $el.innerHTML = inst.components[name + '-' + (i + 1)].template;
         
         parseComponentDOM(name + '-' + (i + 1), inst.components[name + '-' + (i + 1)]);
-        console.log(name + '-' + (i + 1), inst.components[name + '-' + (i + 1)], name);
         parseComponents(inst.components[name + '-' + (i + 1)]);
         
         if (index(instance.activeComponent, ".")) {
@@ -98,7 +91,6 @@ function parseComponent(name, count, inst) {
 }
 
 function replaceComponentName(parent, name, count) {
-    console.log(parent, parent.components[name]);
     let inner;
     if (parent?.$el?.innerHTML) {
         inner = parent.$el.innerHTML;
@@ -149,5 +141,4 @@ function replaceComponentName(parent, name, count) {
         parent.components[name + '-' + (i + 1)].components = components;
         parent.components[name + '-' + (i + 1)].template = parent.components[name].template;
     }
-    console.log(instance.activeComponent, parent.template);
 }

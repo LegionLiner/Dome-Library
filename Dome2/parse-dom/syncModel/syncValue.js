@@ -6,6 +6,7 @@ export function syncValue(node, observable, property) {
   if (has(node, 'd-for')) {
     return;
   }
+  // console.log(node, observable, property);
   if (isInstance) {
     syncValueCompositon(node, observable, property);
   } else {

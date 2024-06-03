@@ -31,6 +31,10 @@ export function addMethod(id, value, component) {
     instance.methods[id] = value;
 }
 
+export function addStore(name, store) {
+    instance[name] = store;
+}
+
 export function createInstance() {
     isInstance = true;
 }

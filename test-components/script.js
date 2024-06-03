@@ -3,8 +3,14 @@ import {
     computed,
     mount,
     template,
+    defineStore,
+    useStore,
+    watch,
 } from "../Dome2/dome.js";
 import "./component.js";
+import { areaStore } from "./store.js";
+
+console.log(areaStore);
 
 const x = ref(["x"], 5);
 const y = ref(["y"], 10);
@@ -15,10 +21,15 @@ computed(["area"], () => {
     };
 }, [x, y]);
 
-template(`
-    <d-component></d-component>
-    <d-component></d-component>
+watch(areaStore.a, () => {
+    console.log(areaStore);
+});
 
+watch(x, () => {
+    areaStore.a.value += 1;
+})
+
+template(`
     <div>
         <p d-text="x"></p>
         <p d-text="y"></p>

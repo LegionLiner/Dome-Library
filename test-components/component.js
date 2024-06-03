@@ -10,13 +10,12 @@ import {
 import Very from "./veryDeep.js"
 
 defineComponent(() => {
-    defineComponents({
-        Very
-    });
+    // defineComponents({
+    //     Very
+    // });
     ref(["text"], 'text from component');
 
     template(`
-    <d-very></d-very>
     <div d-text="text"></div>
     <input d-text="text">
     `, "d-component");
