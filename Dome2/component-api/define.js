@@ -4,6 +4,7 @@ export function defineComponent(name) {
     instance.components[name] = {
         parent: instance.activeComponent ? instance.components[instance.activeComponent] : instance,
         methods: {},
+        components: {},
     };
     instance.activeComponent = name;
 }
@@ -18,6 +19,8 @@ export function Component(name) {
 
 export function defineComponents(components) {
     for (const component in components) {
-        instance.components[components[component].name] = components[component];
+        const name = components[component].name;
+        instance.components[name].parent = instance.activeComponent ? instance.components[instance.activeComponent] : instance;
+        instance.components[instance.activeComponent].components[name] = instance.components[name];
     }
 }

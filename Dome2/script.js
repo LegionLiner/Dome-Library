@@ -59,8 +59,15 @@ onEmit("reverse", () => {
     console.log("onEmit works");
 });
 
+const love = ref(['love'], false);
+
+method("cats", () => {
+    love.value = true;
+})
 
 template(`
+    <p>дима я тебя <span d-if="love">люблю</span></p>
+    <button d-on="click: cats">Нажми</button>
     <p d-bind="[style: style]: show">text</p>
     <d-component></d-component>
     <p>{{ select }}</p>

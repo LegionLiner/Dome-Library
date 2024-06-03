@@ -38,22 +38,39 @@ export function unmount() {
 
 function parseComponents() {
     for (const component in instance.components) {
+        if (instance.components[component].parent.$el) {
+            setProps(instance.components[component], instance);
 
-        setProps(instance.components[component]);
+            const $el = document.querySelector(component);
+            errThrower($el, `Селектор ${component} не найден`);
 
-        const $el = document.querySelector(component);
-        errThrower($el, `Селектор ${component} не найден`);
+            $el.innerHTML = instance.components[component].template;
 
-        $el.innerHTML = instance.components[component].template;
-
-        parseComponentDOM(component, instance.components[component]);
+            parseComponentDOM(component, instance.components[component]);
+            parseChilds(instance.components[component]);
+        }
     }
 }
 
-function setProps(component) {
+function setProps(component, instance) {
     if (!component.props) return;
-
-    for (const prop of component.props) {
+    const props = {};
+    for (const prop in component.props) {
         component[prop] = instance[prop];
+        component.props[prop] = instance[prop];
+    }
+}
+
+function parseChilds(component) {
+    for (const child in component.components) {
+        setProps(component.components[child], component);
+
+        const $el = document.querySelector(child);
+        errThrower($el, `Селектор ${child} не найден`);
+
+        $el.innerHTML = component.components[child].template;
+
+        parseComponentDOM(child, component.components[child]);
+        parseChilds(component.components[child]);
     }
 }
