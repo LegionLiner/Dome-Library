@@ -104,12 +104,19 @@ function replaceComponentName(parent, name, count) {
     instance.activeComponent = null;
 
     const callback = parent.components[name].callback;
+    const components = parent.components[name].components;
     delete parent.components[name].parent;
     delete parent.components[name].callback;
-    console.log(parent.components[name], 'parent.components[name]');
+    delete parent.components[name].components;
+    console.log(components, parent.components[name], 'parent.components[name]');
     for (let i = 0; i < count; i++) {
-        parent.components[name + '-' + (i + 1)] = structuredClone(parent.components[name]);
+        // parent.components[name + '-' + (i + 1)] = structuredClone(parent.components[name]);
+        parent.components[name + '-' + (i + 1)] = {
+            methods: {},
+        }
         parent.components[name + '-' + (i + 1)].callback = callback;
         parent.components[name + '-' + (i + 1)].parent = parent;
+        parent.components[name + '-' + (i + 1)].components = components;
+        parent.components[name + '-' + (i + 1)].template = parent.components[name].template;
     }
 }
