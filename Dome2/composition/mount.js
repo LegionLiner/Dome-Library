@@ -1,5 +1,5 @@
 import { instance, createInstance } from "./instance.js";
-import { errThrower } from "../utilities/index.js";
+import { errThrower, index } from "../utilities/index.js";
 import { parseDOM, parseComponentDOM } from "../parse-dom/parser.js";
 import { useMounted, useCreated, useUnmounted } from "./hooks/index.js";
 import { clearSignals } from "../reactivity/signals.js";
@@ -22,7 +22,7 @@ export function mount(el) {
     instance.$el.innerHTML = instance.$template;
 
     parseDOM(el, instance);
-    parseComponents();
+    parseComponents(instance);
 
     useMounted();
 
@@ -36,12 +36,22 @@ export function unmount() {
     useUnmounted();
 }
 
-function parseComponents() {
-    for (const component in instance.components) {
-        if (instance.components[component].parent.$el) {
-            const countOfComponents = (instance.$el.innerHTML.split(component).length - 1) / 2;
-            replaceComponentName(instance, component, countOfComponents);
-            parseComponent(component, countOfComponents);
+function parseComponents(inst) {
+    for (const component in inst.components) {
+        if (inst.components[component].parent.$el) {
+            const countOfComponents = (inst.$el.innerHTML.split(component).length - 1) / 2;
+            if (countOfComponents) {
+                console.log(component, 'top components');
+                replaceComponentName(inst, component, countOfComponents);
+                parseComponent(component, countOfComponents, inst);
+            }
+        } else {
+            const countOfComponents = (inst.template.split(component).length - 1) / 2;
+            if (countOfComponents) {
+                console.log(component, 'top components');
+                replaceComponentName(inst, component, countOfComponents);
+                parseComponent(component, countOfComponents, inst);
+            }
         }
     }
 }
@@ -55,27 +65,27 @@ function setProps(component, instance) {
     }
 }
 
-function parseComponent(name, count) {
-    console.log(instance.activeComponent, 'activeComponent 1');
+function parseComponent(name, count, inst) {
     for (let i = 0; i < count; i++) {
+        console.log(name + '-' + (i + 1), 'parsing');
         instance.activeComponent = name + '-' + (i + 1);
-        instance.components[name + '-' + (i + 1)].callback();
+        inst.components[name + '-' + (i + 1)].callback();
 
-        setProps(instance.components[name + '-' + (i + 1)], instance);
+        setProps(inst.components[name + '-' + (i + 1)], inst);
 
         const $el = document.querySelector(name + '-' + (i + 1));
         errThrower($el, `Селектор ${name + '-' + (i + 1)} не найден`);
 
-        $el.innerHTML = instance.components[name + '-' + (i + 1)].template;
+        $el.innerHTML = inst.components[name + '-' + (i + 1)].template;
 
         parseComponentDOM(name + '-' + (i + 1), instance.components[name + '-' + (i + 1)]);
-        parseChilds(instance.components[name + '-' + (i + 1)]);
+        parseComponents(inst.components[name + '-' + (i + 1)]);
         instance.activeComponent = null;
     }
 }
 
 function parseChilds(component) {
-    console.log(component, 'component');
+    console.log(component.components, 'childs in component');
     for (const child in component.components) {
         setProps(component.components[child], component);
 
@@ -90,7 +100,12 @@ function parseChilds(component) {
 }
 
 function replaceComponentName(parent, name, count) {
-    let inner = parent.$el.innerHTML;
+    let inner;
+    if (parent?.$el?.innerHTML) {
+        inner = parent.$el.innerHTML;
+    } else {
+        inner = parent.template;
+    }
     let arr = [];
     arr = inner.split(name);
 
@@ -98,25 +113,43 @@ function replaceComponentName(parent, name, count) {
         arr[i] = arr[i] + name + '-' + (i / 2 + 1);
         arr[i + 1] = arr[i + 1] + name + '-' + (i / 2 + 1);
     }
-    parent.$el.innerHTML = arr.join('');
-    instance.activeComponent = name;
+
+    if (parent?.$el?.innerHTML) {
+        parent.$el.innerHTML = arr.join('');
+    } else {
+        parent.template = arr.join('');
+    }
+
+    if (instance.activeComponent) {
+        instance.activeComponent += `.${name}`
+    } else {
+        instance.activeComponent = name;
+    }
+
     parent.components[name].callback();
-    instance.activeComponent = null;
+
+    if (index(instance.activeComponent, ".")) {
+        console.log(instance.activeComponent, 'ffsdgsdgi');
+    } else {
+        instance.activeComponent = null;
+    }
 
     const callback = parent.components[name].callback;
     const components = parent.components[name].components;
     delete parent.components[name].parent;
     delete parent.components[name].callback;
     delete parent.components[name].components;
-    console.log(components, parent.components[name], 'parent.components[name]');
+
+
     for (let i = 0; i < count; i++) {
-        // parent.components[name + '-' + (i + 1)] = structuredClone(parent.components[name]);
         parent.components[name + '-' + (i + 1)] = {
             methods: {},
-        }
+        };
         parent.components[name + '-' + (i + 1)].callback = callback;
         parent.components[name + '-' + (i + 1)].parent = parent;
         parent.components[name + '-' + (i + 1)].components = components;
         parent.components[name + '-' + (i + 1)].template = parent.components[name].template;
     }
+
+    console.log(parent.components, 'first childrens');
 }

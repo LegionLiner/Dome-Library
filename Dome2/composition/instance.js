@@ -1,3 +1,5 @@
+import { index } from "../utilities/index.js";
+
 export let instance = {
     $el: null,
     $selector: null,
@@ -7,12 +9,18 @@ export let instance = {
 };
 export let isInstance = false;
 
-export function addData(name, value, component) {
+export function addData(name, value, component, inst) {
     if (component) {
-        instance.components[component][name] = value;
+        if (index(component, '.')) {
+            const splitted = component.split('.');
+    
+            return addData(name, value, splitted[1], instance.components[splitted[0]])
+        }
+        console.log(name, value, component, inst);
+        inst.components[component][name] = value;
         return;
     }
-    instance[name] = value;
+    inst[name] = value;
 }
 
 export function addMethod(id, value, component) {
@@ -25,4 +33,14 @@ export function addMethod(id, value, component) {
 
 export function createInstance() {
     isInstance = true;
+}
+
+export function extractComponent(name, instance) {
+    console.log(name, instance);
+    if (index(name, '.')) {
+        const splitted = name.split('.');
+
+        return extractComponent(splitted[1], instance.components[splitted[0]])
+    }
+    return instance.components[component]
 }

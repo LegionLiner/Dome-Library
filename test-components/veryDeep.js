@@ -2,24 +2,18 @@ import {
     ref,
     mount,
     template,
-    watch,
     defineComponent,
     Component,
-    defineEmits,
-    emit
+
 } from "../Dome2/dome.js";
 
 defineComponent(() => {
-    const text = ref(["text"], 'very very very deep text');
-
-    watch(text, () => {
-        emit('logMe');
-    })
+    ref(["text"], 'very very very deep text');
 
     template(`
     <div d-text="text"></div>
     <input d-text="text">
-    !!!!!!!!!!!
+    <p>!!!</p>
     `, "d-very");
     mount("d-very");
 }, 'd-very');

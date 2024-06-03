@@ -54,7 +54,7 @@ export function computed(name, method, deps) {
     set() { },
   });
 
-  addData(name, computed, instance.activeComponent);
+  addData(name, computed, instance.activeComponent, instance);
   return computed;
 };
 

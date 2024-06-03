@@ -1,6 +1,6 @@
 import { defineProperty, uuid } from "../utilities/index.js";
 import { weakProxy } from "./proxy.js";
-import { addData, instance } from "../composition/instance.js";
+import { addData, extractComponent, instance } from "../composition/instance.js";
 import { notify } from "./signals.js";
 
 export const RefType = Symbol('RefType');
@@ -49,7 +49,7 @@ export function ref(name, data) {
   refValue = weakProxy(refValue, id);
   globalRefs[id] = refValue;
 
-  addData(name, refValue, instance.activeComponent);
+  addData(name, refValue, instance.activeComponent, instance);
 
   return refValue;
 };
