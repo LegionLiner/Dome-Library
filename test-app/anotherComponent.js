@@ -7,7 +7,7 @@ import {
     defineComponents,
     Component,
     props,
-} from "./dome.js";
+} from "../Dome2/dome.js";
 import Very from "./veryDeep.js";
 
 defineComponent('d-deep');

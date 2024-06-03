@@ -14,7 +14,7 @@ import {
     onCreated,
     template,
     onEmit,
-} from "./dome.js";
+} from "../Dome2/dome.js";
 import "./component.js";
 
 readonly(["readonlyText"], "lol");

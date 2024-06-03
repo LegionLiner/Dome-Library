@@ -4,7 +4,7 @@ import {
     template,
     defineComponent,
     Component,
-} from "./dome.js";
+} from "../Dome2/dome.js";
 
 defineComponent('d-very');
 

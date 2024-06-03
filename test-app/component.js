@@ -9,7 +9,7 @@ import {
     props,
     emits,
     emit,
-} from "./dome.js";
+} from "../Dome2/dome.js";
 import Deep from './anotherComponent.js';
 
 defineComponent('d-component');
