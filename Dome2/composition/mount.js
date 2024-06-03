@@ -56,6 +56,7 @@ function setProps(component, instance) {
 }
 
 function parseComponent(name, count) {
+    console.log(instance.activeComponent, 'activeComponent 1');
     for (let i = 0; i < count; i++) {
         instance.activeComponent = name + '-' + (i + 1);
         instance.components[name + '-' + (i + 1)].callback();
@@ -98,13 +99,14 @@ function replaceComponentName(parent, name, count) {
         arr[i + 1] = arr[i + 1] + name + '-' + (i / 2 + 1);
     }
     parent.$el.innerHTML = arr.join('');
-
+    instance.activeComponent = name;
     parent.components[name].callback();
+    instance.activeComponent = null;
 
     const callback = parent.components[name].callback;
     delete parent.components[name].parent;
     delete parent.components[name].callback;
-
+    console.log(parent.components[name], 'parent.components[name]');
     for (let i = 0; i < count; i++) {
         parent.components[name + '-' + (i + 1)] = structuredClone(parent.components[name]);
         parent.components[name + '-' + (i + 1)].callback = callback;

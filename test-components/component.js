@@ -10,10 +10,10 @@ import {
 import Very from "./veryDeep.js"
 
 defineComponent(() => {
-    // defineComponents({
-    //     Very
-    // })
-    const text = ref(["text"], 'text from component');
+    defineComponents({
+        Very
+    });
+    ref(["text"], 'text from component');
 
     template(`
     <d-very></d-very>
