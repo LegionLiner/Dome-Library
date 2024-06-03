@@ -54,7 +54,7 @@ function parseComponents() {
 
 function setProps(component, instance) {
     if (!component.props) return;
-    const props = {};
+
     for (const prop in component.props) {
         component[prop] = instance[prop];
         component.props[prop] = instance[prop];
