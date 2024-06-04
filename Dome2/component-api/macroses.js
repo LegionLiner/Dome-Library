@@ -12,7 +12,7 @@ export function defineProps(props) {
 }
 
 export function defineEmits(emits) {
-    instance.components[instance.activeComponent].emits = emits;
+    extractComponent(instance.activeComponent, instance).emits = emits;
 }
 
 export function emit(name) {

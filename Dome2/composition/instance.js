@@ -22,12 +22,16 @@ export function addData(name, value, component, inst) {
     inst[name] = value;
 }
 
-export function addMethod(id, value, component) {
+export function addMethod(name, value, component, inst) {
     if (component) {
-        instance.components[component].methods[id] = value;
+        if (index(component, '.')) {
+            const splitted = component.split('.');
+            return addMethod(name, value, splitted[1], inst.components[splitted[0]])
+        }
+        inst.components[component].methods[name] = value;
         return;
     }
-    instance.methods[id] = value;
+    inst.methods[name] = value;
 }
 
 export function addStore(name, store) {
