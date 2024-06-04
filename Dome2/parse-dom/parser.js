@@ -64,9 +64,8 @@ export function parseDOM(parentNode, observable) {
     syncStyles(parentNode)
 }
 
-export function parseComponentDOM(parentNode, observable) {
-
-    //console.log(parentNode, observable, 'parentNode, observable');
+export function parseComponentDOM(parentNode, observable, exclude) {
+    // console.log(document.querySelector(parentNode), 'document.querySelector(parentNode)');
 
     const clonedNodes = [];
     if (parentNode.startsWith('d-')) {
@@ -129,13 +128,14 @@ export function parseComponentDOM(parentNode, observable) {
         syncClicks(node, observable, node.attributes['d-on'].value);
     });
 
-
     clonedNodes.forEach((node) => {
         node.removeAttribute(parentNode);
     });
 }
 
 function replaceNodes(el, attr, clonedNodes) {
+    if (!el) return;
+
     const els = el.children;
     for (const node of els) {
         const clonedNode = node.cloneNode(true);

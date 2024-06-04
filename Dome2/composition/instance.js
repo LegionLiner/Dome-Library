@@ -11,7 +11,6 @@ export let isInstance = false;
 
 export function addData(name, value, component, inst) {
     if (component) {
-       //console.log(component, inst, 'cmponent, instance');
         if (index(component, '.')) {
             const splitted = component.split('.');
     
