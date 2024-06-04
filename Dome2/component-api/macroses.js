@@ -1,4 +1,4 @@
-import { instance } from "../composition/instance.js";
+import { instance, extractComponent } from "../composition/instance.js";
 
 export function defineProps(props) {
     const objProps = {};
@@ -7,8 +7,8 @@ export function defineProps(props) {
         objProps[prop] = {};
     }
 
-    instance.components[instance.activeComponent].props = objProps;
-    return instance.components[instance.activeComponent].props;
+    extractComponent(instance.activeComponent, instance).props = objProps;
+    return objProps;
 }
 
 export function defineEmits(emits) {

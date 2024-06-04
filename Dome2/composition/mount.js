@@ -4,7 +4,6 @@ import { parseDOM, parseComponentDOM } from "../parse-dom/parser.js";
 import { useMounted, useCreated, useUnmounted } from "./hooks/index.js";
 import { clearSignals } from "../reactivity/signals.js";
 
-
 let globalArr = [];
 
 export function mount(el) {
@@ -25,13 +24,10 @@ export function mount(el) {
     parseComponents(instance);
 
     const names = [...new Set(globalArr.map((item) => item.name))];
-    // globalArr = globalArr.reverse();
-
-    console.log(globalArr, 'globalArr');
 
     globalArr.forEach((item) => {
         parseComponentDOM(item.name, item.inst, names);
-    })
+    });
 
     parseDOM(el, instance);
 
@@ -92,18 +88,13 @@ function parseComponent(name, count, inst) {
 
         parseComponents(inst.components[name + '-' + (i + 1)]);
 
-        // console.log(globalArr.findIndex((item) => item.name === name + '-' + (i + 1)), 'globalArr');
         const indexOfEl = globalArr.findIndex((item) => item.name === name + '-' + (i + 1));
-        // console.log(globalArr, globalArr.findIndex((item) => item.name === name + '-' + (i + 1)), 'globalArr'); 
-
         if (indexOfEl === -1) {
             globalArr.unshift({
-                name: name + '-' + (i + 1), 
+                name: name + '-' + (i + 1),
                 inst: inst.components[name + '-' + (i + 1)]
             });
         };
-
-       // parseComponentDOM(name + '-' + (i + 1), inst.components[name + '-' + (i + 1)]);
 
         if (index(instance.activeComponent, ".")) {
             instance.activeComponent = instance.activeComponent.split(`.${name}`)[0]

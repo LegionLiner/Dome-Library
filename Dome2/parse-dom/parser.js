@@ -65,8 +65,6 @@ export function parseDOM(parentNode, observable) {
 }
 
 export function parseComponentDOM(parentNode, observable, exclude) {
-    // console.log(document.querySelector(parentNode), 'document.querySelector(parentNode)');
-
     const clonedNodes = [];
     if (parentNode.startsWith('d-')) {
         replaceNodes(document.querySelector(parentNode), parentNode, clonedNodes);

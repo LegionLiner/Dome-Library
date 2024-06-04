@@ -13,7 +13,7 @@ export function addData(name, value, component, inst) {
     if (component) {
         if (index(component, '.')) {
             const splitted = component.split('.');
-    
+            // extractComponent(component, inst).components[splitted.at(-1)][name] = value;
             return addData(name, value, splitted[1], instance.components[splitted[0]])
         }
         inst.components[component][name] = value;
@@ -39,11 +39,10 @@ export function createInstance() {
 }
 
 export function extractComponent(name, instance) {
-    console.log(name, instance);
     if (index(name, '.')) {
         const splitted = name.split('.');
 
         return extractComponent(splitted[1], instance.components[splitted[0]])
     }
-    return instance.components[component]
+    return instance.components[name]
 }

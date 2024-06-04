@@ -6,30 +6,16 @@ import {
 } from "../Dome2/dome.js";
 import "./component.js";
 
-const x = ref(["x"], 5);
-const y = ref(["y"], 10);
+const a = ref(['a'], 7);
+const b = ref(['b'], 8);
 
-computed(["area"], () => {
-    return {
-        val: x.value * y.value
-    };
-}, [x, y]);
-
+computed(['c'], () => {
+    return a.value + b.value
+}, [a, b]);
 
 template(`
     <d-component></d-component>
-    <p>1</p>
-    <div>
-        <d-component></d-component>
-        <p>2</p>
-    </div>
-    <d-component></d-component>
-    <p>3</p>
-    <div>
-        <p d-text="x"></p>
-        <p d-text="y"></p>
-        <input d-text="x"> * <input d-text="y"> = <p d-text="area.val"></p>
-    </div>
+    <input d-text="a"> + <input d-text="b"> = <p d-text="c"></p>
 `, ".app");
 
 mount('.app');

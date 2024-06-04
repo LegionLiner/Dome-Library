@@ -1,10 +1,12 @@
 import {
     ref,
+    computed,
     mount,
     template,
     defineComponent,
     defineComponents,
     Component,
+    defineProps,
 } from "../Dome2/dome.js";
 import Very from "./veryDeep.js"
 
@@ -12,13 +14,14 @@ defineComponent(() => {
     defineComponents({
         Very
     });
-    ref(["text"], 'text from component');
+    const props = defineProps(['a', 'b']);
+    computed(['newC'], () => {
+        console.log(props);
+        return props.a.value + props.b.value
+    }, [props.a, props.b]);
 
     template(`
-    <hr>
     <d-very></d-very>
-    <div d-text="text"></div>
-    <input d-text="text">
     `, "d-component");
     mount("d-component");
 }, 'd-component');

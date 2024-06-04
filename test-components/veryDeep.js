@@ -3,17 +3,18 @@ import {
     mount,
     template,
     defineComponent,
+    defineProps,
     Component,
-
 } from "../Dome2/dome.js";
 
 defineComponent(() => {
-    ref(["text"], 'very very very deep text');
+
+    const props = defineProps(['newC']);
+
+    console.log(props,'propsprops');
 
     template(`
-    <div d-text="text"></div>
-    <input d-text="text">
-    <p>!!!</p>
+    <div d-text="newC"></div>
     `, "d-very");
     mount("d-very");
 }, 'd-very');
