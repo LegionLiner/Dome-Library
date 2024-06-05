@@ -12,7 +12,7 @@ export function mount(el) {
     }
     createInstance();
 
-    useCreated();
+    useCreated(el);
 
     const $el = document.querySelector(el);
     errThrower($el, `Селектор ${el} не найден`);
@@ -27,11 +27,12 @@ export function mount(el) {
 
     globalArr.forEach((item) => {
         parseComponentDOM(item.name, item.inst, names);
+        useMounted(item.name);
     });
 
     parseDOM(el, instance);
 
-    useMounted();
+    useMounted(el);
 }
 
 export function unmount() {
@@ -101,6 +102,8 @@ function parseComponent(name, count, inst) {
         } else {
             instance.activeComponent = null;
         }
+
+        useCreated(name + '-' + (i + 1));
     }
 }
 

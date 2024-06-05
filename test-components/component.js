@@ -10,29 +10,24 @@ import {
     onEmit,
     Component,
     defineProps,
+    onCreated,
+    onMounted,
 } from "../Dome2/dome.js";
-import Very from "./veryDeep.js";
 
 defineComponent(() => {
-    defineComponents({
-        Very
-    });
-    const props = defineProps(['a', 'b']);
-    defineEmits(['componentEmit']);
+    defineProps(['a', 'b']);
 
-    computed(['newC'], () => {
-        return props.a.value + props.b.value
-    }, [props.a, props.b]);
-
-    onEmit('deepComponentEmit', () => {
-        console.log('from component 2');
-        emit('componentEmit')
-    });
+    // onCreated(() => {
+    //     console.log('onCreated in component');
+    // });
+    // onMounted(() => {
+    //     console.log('onMounted in component');
+    // });
 
     template(`
-    <d-very></d-very>
+    <p>{{ a }}, {{ b }}</p>
     `, "d-component");
-    mount("d-component");
+
 }, 'd-component');
 
 export default Component("d-component");

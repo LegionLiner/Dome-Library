@@ -1,4 +1,4 @@
-import { has, errThrower, findProperty, findValue, findValueComposition, findPropertyComposition, findId } from "../../utilities/index.js";
+import { has, errThrower, findProperty, findValue, findIdStore, findValueComposition, findPropertyComposition, findId } from "../../utilities/index.js";
 import { observe } from "../../reactivity/signals.js";
 import { isInstance } from "../../composition/instance.js";
 
@@ -22,7 +22,7 @@ function syncNodeCompositon(node, observable, property) {
 
     node.textContent = findValueComposition(observable, property);
 
-    observe(findId(observable, property), () => {
+    observe(findId(observable, property) || findIdStore(observable, property), () => {
         node.textContent = findValueComposition(observable, property);
     });
 }

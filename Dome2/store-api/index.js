@@ -1,5 +1,7 @@
 import { instance, addStore } from "../composition/instance.js";
 
+export const StoreType = Symbol('StoreType');
+
 export function defineStore(name, data) {
     const storeData = data();
 
@@ -9,6 +11,7 @@ export function defineStore(name, data) {
         delete instance[key];
     }
 
+    instance[name][name] = StoreType;
     return instance[name];
 
 }

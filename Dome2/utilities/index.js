@@ -1,3 +1,5 @@
+import { StoreType } from "../store-api/index.js";
+
 export const { isArray } = Array;
 export const { defineProperty } = Object;
 export const isObject = (val) => typeof val === 'object' && val !== null;
@@ -54,8 +56,14 @@ export function findValueComposition(observable, value) {
     if (index(value, '.')) {
         const val = value.slice(0, indexOf(value, '.'));
         const nextValue = value.slice(indexOf(value, '.') + 1, value.length);
-
+        if (observable[val][val] && observable[val][val] === StoreType) {
+            return findValueComposition(observable[val], nextValue);
+        }
         return findValue(observable[val].value, nextValue);
+    }
+
+    if (observable[value][value] && observable[value][value] === StoreType) {
+        return observable[value];
     }
 
     return observable[value].value;
@@ -90,6 +98,18 @@ export function findId(observable, value) {
     if (index(value, '.')) {
         const val = value.slice(0, value.indexOf("."))
         return observable[val].id;
+    }
+    if (typeof observable[value] !== "undefined") {
+        return observable[value].id;
+    }
+}
+
+export function findIdStore(observable, value) {
+    if (index(value, '.')) {
+        const val = value.slice(0, value.indexOf("."));
+        const val2 = value.slice(value.indexOf(".") + 1, value.length);
+        
+        return findId(observable[val], val2);
     }
     if (typeof observable[value] !== "undefined") {
         return observable[value].id;

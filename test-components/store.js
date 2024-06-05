@@ -9,7 +9,7 @@ export const areaStore = defineStore('areaStore', () => {
     const b = ref(['b'], 8);
 
     const c = computed(['c'], () => {
-        return a.value + b.value
+        return a.value * b.value
     }, [a, b])
 
     return {

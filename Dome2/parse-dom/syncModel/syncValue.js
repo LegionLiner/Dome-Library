@@ -1,12 +1,13 @@
-import { index, has, errThrower, findProperty, findValue, findValueComposition, findPropertyComposition, findId } from "../../utilities/index.js";
+import { index, has, errThrower, findProperty, findValue, findValueComposition, findPropertyComposition, findId, indexOf, findIdStore } from "../../utilities/index.js";
 import { observe } from "../../reactivity/signals.js";
 import { isInstance } from "../../composition/instance.js";
+import { StoreType } from "../../store-api/index.js";
 
 export function syncValue(node, observable, property) {
   if (has(node, 'd-for')) {
     return;
   }
-  // console.log(node, observable, property);
+
   if (isInstance) {
     syncValueCompositon(node, observable, property);
   } else {
@@ -25,9 +26,13 @@ function syncValueCompositon(node, observable, property) {
   const val = findPropValue(observable, property);
   node.value = findValueComposition(observable, property) || "";
 
-  if (typeof val === 'object') {
+  if ((typeof val === 'object') && (val !== null) && (val[property.slice(0, indexOf(property, '.'))] == StoreType)) {
+    const prop = property.slice(property.lastIndexOf('.') + 1);
+    node.addEventListener('input', () => {
+      val[prop].value = node.value;
+    });
+  } else if ((typeof val === 'object') && (val !== null)) {
     property = property.slice(property.lastIndexOf('.') + 1);
-
     node.addEventListener('input', () => {
       val[property] = node.value;
     });
@@ -37,8 +42,7 @@ function syncValueCompositon(node, observable, property) {
     });
   }
 
-
-  observe(findId(observable, property), () => {
+  observe(findId(observable, property) || findIdStore(observable, property), () => {
     node.value = findValueComposition(observable, property);
   });
 }
