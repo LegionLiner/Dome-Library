@@ -1,4 +1,4 @@
-import { findValueComposition, errThrower, isArray, isObject, defineProperty, uuid } from "../../utilities/index.js";
+import { findValueComposition, errThrower, isArray, isObject, defineProperty, uuid, findId } from "../../utilities/index.js";
 import { observe } from "../../reactivity/signals.js";
 import { parseForElementDOM } from "../parser.js";
 
@@ -16,7 +16,7 @@ export function syncFor(node, observable, property, isObserved) {
     if (!isObserved) {
         id = uuid();
 
-        observe(value.id, () => {
+        observe(findId(observable, varName), () => {
             syncFor(node, observable, property, id);
         })
     } else {

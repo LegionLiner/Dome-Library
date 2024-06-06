@@ -24,12 +24,11 @@ const data = ref(['data'], [
         age: 40
     }
 ]);
+const age = ref(['age'], 25);
 
-const data2 = computed('data2', () => {
-    return data.value.filter(item => item.age > 25);
-}, [data]);
-
-console.log(data2);
+computed('data2', () => {
+    return data.value.filter(item => item.age > age.value);
+}, [data, age]);
 
 const showArray = ref(['showArray'], true);
 
@@ -44,6 +43,7 @@ method('toggle', () => {
 });
 
 template(`
+    <input d-text="age">
     <button d-on="click: toggle">Toggle</button>
     <p d-text="data.length"></p>
     <button d-on="click: add">Add</button>
@@ -57,7 +57,7 @@ template(`
         </div>
     </div>
     <div d-else>
-        <p>More than 25 y.o <span d-text="data2.length"></span></p>
+        <p>More than <span d-text="age"></span> y.o <span d-text="data2.length"></span></p>
         <div d-for="item in data2">
             <span d-text="item.id"></span>
             <span d-text="item.name"></span>
