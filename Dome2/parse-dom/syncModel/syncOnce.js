@@ -5,7 +5,7 @@ export function syncOnce(node, observable, property) {
     if (has(node, 'd-for')) {
         return;
     }
-    if (isInstance) {
+    if (isInstance && !observable.symbol) {
         syncOnceCompositon(node, observable, property);
     } else {
         syncOnceOption(node, observable, property);

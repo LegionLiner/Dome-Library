@@ -7,7 +7,7 @@ export function syncSelect(node, observable, property) {
         return;
     }
 
-    if (isInstance) {
+    if (isInstance && !observable.symbol) {
         syncSelectCompositon(node, observable, property);
     } else {
         syncSelectOption(node, observable, property);

@@ -8,7 +8,7 @@ export function syncValue(node, observable, property) {
     return;
   }
 
-  if (isInstance) {
+  if (isInstance && !observable.symbol) {
     syncValueCompositon(node, observable, property);
   } else {
     syncValueOption(node, observable, property);

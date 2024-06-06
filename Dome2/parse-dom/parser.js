@@ -21,15 +21,19 @@ export function parseDOM(parentNode, observable) {
         errThrower(node.attributes['d-bind'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
         syncBind(node, observable, node.attributes['d-bind'].value);
     });
-
     const asHtml = qsa(`${parentNode} [d-html]`);
     const once = qsa(`${parentNode} [d-once]`);
     const nodes = qsa(`${parentNode} [d-text]`);
-    const vm = qsa(`${parentNode} :not(input, button)`);
     const model = qsa(`${parentNode} [d-model]`);
+    const vm = qsa(`${parentNode} :not(input, button)`);
+    const clicks = qsa(`${parentNode} [d-on]`)
     // для кадого найденного элемента с атрибутом x вызываем функцию,
     // связанную c этим x атрибутом
-
+    vm.forEach((node) => {
+        if (index(node.textContent, '{{')) {
+            syncVM(node, observable);
+        }
+    });
     nodes.forEach((node) => {
         errThrower(node.attributes['d-text'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
         if (node.nodeName == 'INPUT' || node.nodeName == "TEXTAREA") {
@@ -46,16 +50,10 @@ export function parseDOM(parentNode, observable) {
         errThrower(node.attributes['d-html'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
         syncAsHtml(node, observable, node.attributes['d-html'].value);
     });
-    vm.forEach((node) => {
-        if (index(node.textContent, '{{')) {
-            syncVM(node, observable);
-        }
-    });
     model.forEach((node) => {
         errThrower(node.attributes['d-model'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
         syncSelect(node, observable, node.attributes['d-model'].value);
-    });
-    const clicks = qsa(`${parentNode} [d-on]`);
+    });;
     clicks.forEach((node) => {
         errThrower(node.attributes['d-on'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
         syncClicks(node, observable, node.attributes['d-on'].value);
@@ -133,7 +131,6 @@ export function parseComponentDOM(parentNode, observable, replace) {
 }
 
 export function parseForElementDOM(parentNode, observable) {
-
     // парс DOM, ищем все атрибуты в node
     const ifs = qsa(`[${parentNode}] [d-if]`);
     ifs.forEach((node) => {
@@ -156,6 +153,7 @@ export function parseForElementDOM(parentNode, observable) {
     const nodes = qsa(`[${parentNode}] [d-text]`);
     const vm = qsa(`[${parentNode}] :not(input, button)`);
     const model = qsa(`[${parentNode}] [d-model]`);
+    const clicks = qsa(`[${parentNode}] [d-on]`);
     // для кадого найденного элемента с атрибутом x вызываем функцию,
     // связанную c этим x атрибутом
 
@@ -184,7 +182,6 @@ export function parseForElementDOM(parentNode, observable) {
         errThrower(node.attributes['d-model'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
         syncSelect(node, observable, node.attributes['d-model'].value);
     });
-    const clicks = qsa(`[${parentNode}][d-on]`);
     clicks.forEach((node) => {
         errThrower(node.attributes['d-on'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
         syncClicks(node, observable, node.attributes['d-on'].value);

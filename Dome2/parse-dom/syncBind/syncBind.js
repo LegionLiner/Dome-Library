@@ -5,8 +5,7 @@ import { observe } from "../../reactivity/signals.js";
 // attr: value, [attr: value]: condition
 
 export function syncBind(node, observable, property) {
-
-    if (isInstance) {
+    if (isInstance && !observable.symbol) {
         syncBindCompositon(node, observable, property);
     } else {
         syncBindOption(node, observable, property);

@@ -6,7 +6,7 @@ export function syncAsHtml(node, observable, property) {
     if (has(node, 'd-for')) {
         return;
     }
-    if (isInstance) {
+    if (isInstance && !observable.symbol) {
         syncAsHtmlCompositon(node, observable, property);
     } else {
         syncAsHtmlOption(node, observable, property);

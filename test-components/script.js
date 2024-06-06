@@ -38,8 +38,12 @@ method('add', () => {
 method('remove', () => {
     data.value.splice(data.value.length - 1, 1);
 });
-method('toggle', () => {
+method('toggle', (val) => {
     showArray.value = !showArray.value;
+});
+
+method('log', (val) => {
+    console.log(val.id, 'log');
 });
 
 template(`
@@ -51,7 +55,7 @@ template(`
     <hr>
     <div d-if="showArray">
         <div d-for="item in data">
-            <span d-text="item.id"></span>
+            <span d-text="item.id" d-on="click: log(item)"></span>
             <span d-text="item.name"></span>
             <span d-text="item.age"></span>
         </div>
