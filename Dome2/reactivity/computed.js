@@ -37,18 +37,29 @@ export function computed(name, method, deps) {
     watchers: [],
   };
 
+
+  let lastValue;
+
   observe(computed.id, () => {
     computed.watchers.forEach(watcher => watcher.call(null));
   });
 
   deps.forEach(el => {
     observe(el.id, () => {
-      notify(computed.id);
+      if (lastValue !== computed.value) {
+        notify(computed.id);
+      }
     })
   });
 
   defineProperty(computed, 'value', {
     get() {
+      const val = method();
+
+      if (val !== lastValue) {
+        lastValue = val;
+      }
+
       return method();
     },
     set() { },

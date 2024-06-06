@@ -3,39 +3,67 @@ import {
     computed,
     mount,
     template,
-    onEmit,
-    onCreated,
-    onMounted,
+    method,
 } from "../Dome2/dome.js";
-import "./component.js";
 import { areaStore } from "./store.js";
 
-console.log(areaStore);
+const data = ref(['data'], [
+    {
+        id: 1,
+        name: 'John',
+        age: 30
+    },
+    {
+        id: 2,
+        name: 'Jane',
+        age: 25
+    },
+    {
+        id: 3,
+        name: 'Bob',
+        age: 40
+    }
+]);
 
-const a = ref(['a'], 7);
-const b = ref(['b'], 8);
+const data2 = computed('data2', () => {
+    return data.value.filter(item => item.age > 25);
+}, [data]);
 
-computed(['c'], () => {
-    return a.value + b.value
-}, [a, b]);
+console.log(data2);
 
-// onCreated(() => {
-//     //console.log('onCreated');
-// });
-// onMounted(() => {
-//     //console.log('onMounted');
-// });
+const showArray = ref(['showArray'], true);
+
+method('add', () => {
+    data.value.push({ id: data.value.length + 1, name: 'Tom', age: Math.floor(Math.random() * 100) });
+});
+method('remove', () => {
+    data.value.splice(data.value.length - 1, 1);
+});
+method('toggle', () => {
+    showArray.value = !showArray.value;
+});
 
 template(`
-    <d-component></d-component>
-    <input d-text="a"> + <input d-text="b"> = <p d-text="c"></p>
+    <button d-on="click: toggle">Toggle</button>
+    <p d-text="data.length"></p>
+    <button d-on="click: add">Add</button>
+    <button d-on="click: remove">Remove</button>
     <hr>
-    <p>stores</p>
-    <p d-text="areaStore.a"></p>
-    <input d-text="areaStore.a">
-    <p d-text="areaStore.b"></p>
-    <input d-text="areaStore.b">
-    <p d-text="areaStore.c"></p>
+    <div d-if="showArray">
+        <div d-for="item in data">
+            <span d-text="item.id"></span>
+            <span d-text="item.name"></span>
+            <span d-text="item.age"></span>
+        </div>
+    </div>
+    <div d-else>
+        <p>More than 25 y.o <span d-text="data2.length"></span></p>
+        <div d-for="item in data2">
+            <span d-text="item.id"></span>
+            <span d-text="item.name"></span>
+            <span d-text="item.age"></span>
+        </div>
+    </div>
 `, ".app");
 
 mount('.app');

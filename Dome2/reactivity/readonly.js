@@ -37,7 +37,7 @@ export function readonly(name, data) {
     },
   });
 
-  addData(name, readonlyValue, instance.activeComponent);
+  addData(name, readonlyValue, instance.activeComponent, instance);
 
   return readonlyValue;
 };

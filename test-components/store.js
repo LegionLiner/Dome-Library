@@ -2,6 +2,7 @@ import {
     ref,
     computed,
     defineStore,
+    method,
 } from "../Dome2/dome.js";
 
 export const areaStore = defineStore('areaStore', () => {
@@ -12,7 +13,12 @@ export const areaStore = defineStore('areaStore', () => {
         return a.value * b.value
     }, [a, b])
 
+    const increment = method('increment', () => {
+        a.value++;
+        b.value++;
+    })
+
     return {
-        a, b, c
+        a, b, c, increment
     }
 });
