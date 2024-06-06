@@ -43,6 +43,10 @@ export function createInstance() {
 }
 
 export function extractComponent(name, instance) {
+    if (!name) {
+        return instance;
+    }
+
     if (index(name, '.')) {
         const splitted = name.split('.');
 

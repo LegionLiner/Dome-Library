@@ -8,12 +8,14 @@ export function defineStore(name, data) {
     addStore(name, storeData);
 
     for (const key in storeData) {
+        if (typeof storeData[key] === 'function') {
+            delete instance.methods[key];
+        }
         delete instance[key];
     }
 
     instance[name][name] = StoreType;
     return instance[name];
-
 }
 
 export function useStore(name) {

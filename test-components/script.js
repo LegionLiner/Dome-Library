@@ -4,6 +4,8 @@ import {
     mount,
     template,
     method,
+    defineRoute,
+    defineRouter,
 } from "../Dome2/dome.js";
 import { areaStore } from "./store.js";
 

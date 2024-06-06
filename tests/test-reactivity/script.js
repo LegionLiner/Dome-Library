@@ -23,7 +23,5 @@ template(`
     <span d-text="d"></span> - d in component |
     <button d-on="click: increment">inc in comp</button>
 `, ".app");
-
 //     <button d-on="click: testStore.increment">Click</button>
-
 mount('.app');
