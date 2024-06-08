@@ -37,7 +37,6 @@ export function computed(name, method, deps) {
     watchers: [],
   };
 
-
   let lastValue;
 
   observe(computed.id, () => {

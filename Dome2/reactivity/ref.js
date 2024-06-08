@@ -1,4 +1,4 @@
-import { defineProperty, uuid } from "../utilities/index.js";
+import { defineProperty, sameValue, uuid } from "../utilities/index.js";
 import { weakProxy } from "./proxy.js";
 import { addData, extractComponent, instance } from "../composition/instance.js";
 import { notify } from "./signals.js";
@@ -16,7 +16,7 @@ export function ref(name, data) {
     id,
     watchers: [],
     _value: data
-  }
+  };
 
   defineProperty(refValue, '__type__', {
     writable: false,
@@ -38,9 +38,10 @@ export function ref(name, data) {
       return refValue._value;
     },
     set(value) {
-      refValue._value = value;
-
-      notify(id);
+      if (!sameValue(value, refValue._value)) {
+        refValue._value = value;
+        notify(id);
+      }
 
       return true;
     },

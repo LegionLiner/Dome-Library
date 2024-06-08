@@ -40,7 +40,7 @@ method('add', () => {
 method('remove', () => {
     data.value.splice(data.value.length - 1, 1);
 });
-method('toggle', (val) => {
+method('toggle', () => {
     showArray.value = !showArray.value;
 });
 
@@ -51,23 +51,23 @@ method('log', (val) => {
 template(`
     <input d-text="age">
     <button d-on="click: toggle">Toggle</button>
-    <p d-text="data.length"></p>
+    <p>{{ data.length }}</p>
     <button d-on="click: add">Add</button>
     <button d-on="click: remove">Remove</button>
     <hr>
     <div d-if="showArray">
-        <div d-for="item in data">
-            <span d-text="item.id" d-on="click: log(item)"></span>
-            <span d-text="item.name"></span>
-            <span d-text="item.age"></span>
+        <div d-for="item, index in data" d-bind="item: item.id">
+            <span d-on="click: log(item)">{{ item.id }}</span>
+            <span>{{ item.name }}</span>
+            <span>{{ item.age }}</span>
         </div>
     </div>
     <div d-else>
         <p>More than <span d-text="age"></span> y.o <span d-text="data2.length"></span></p>
         <div d-for="item in data2">
-            <span d-text="item.id"></span>
-            <span d-text="item.name"></span>
-            <span d-text="item.age"></span>
+            <span>{{ item.id }}</span>
+            <span>{{ item.name }}</span>
+            <span>{{ item.age }}</span>
         </div>
     </div>
 `, ".app");

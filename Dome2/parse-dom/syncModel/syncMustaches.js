@@ -6,37 +6,12 @@ export function syncVM(node, observable) {
     if (has(node, 'd-for')) {
         return;
     }
-    if (isInstance) {
+
+    if (isInstance && !observable.symbol) {
         syncVMComposition(node, observable);
     } else {
         syncVMOption(node, observable);
     }
-}
-
-function VMnesting(text, observed, observable, node) {
-    let flag = true;
-    let result
-    observed ? result = observed : result = [];
-    let start = indexOf(text, "{{")
-    let end = indexOf(text, "}}")
-    let str = text.slice(start + 2, end)
-    if (indexOf(str, ".") != -1) {
-        errThrower(findValue(observable, str), `Не существует переменной с именем ${str} в
-      --> ${node.outerHTML}
-      или её значение не определено`)
-        str = findProperty(observable, str)
-    }
-    if (!flag) {
-        errThrower(typeof observable[str] !== "undefined", `Не существует переменной с именем ${str} в
-      --> ${node.outerHTML}
-      или её значение не определено`)
-    }
-    result.push(str)
-    text = text.slice(end + 2, text.length)
-    if (indexOf(text, "{{") != -1) {
-        return VMnesting(text, result, observable, node)
-    }
-    return result;
 }
 
 function VMnestingComposition(text, observed, observable, node) {
@@ -50,7 +25,6 @@ function VMnestingComposition(text, observed, observable, node) {
         errThrower(findValueComposition(observable, str), `Не существует переменной с именем ${str} в
       --> ${node.outerHTML}
       или её значение не определено`)
-        str = findPropertyComposition(observable, str)
     }
     if (!flag) {
         errThrower(typeof observable[str] !== "undefined", `Не существует переменной с именем ${str} в
@@ -73,7 +47,7 @@ function syncVMComposition(node, observable, inner, ifObserved) {
     const indexTwo = indexOf(text, '}}');
     if (!ifObserved) {
         for (let value of VMnestingComposition(text, "", observable, node)) {
-            observe(observable[value.trim()].id, () => {
+            observe(findId(observable, value), () => {
                 syncVMComposition(node, observable, nodeInner, true);
             });
         }
@@ -114,6 +88,35 @@ function syncVMComposition(node, observable, inner, ifObserved) {
     }
 }
 
+function VMnesting(text, observed, observable, node) {
+    let flag = true;
+    let result;
+
+    observed ? result = observed : result = [];
+
+    let start = indexOf(text, "{{");
+    let end = indexOf(text, "}}");
+    let str = text.slice(start + 2, end).trim();
+
+    if (indexOf(str, ".") != -1) {
+        errThrower(findValue(observable, str), `Не существует переменной с именем ${str} в
+      --> ${node.outerHTML}
+      или её значение не определено`)
+        str = findProperty(observable, str)
+    }
+    if (!flag) {
+        errThrower(typeof observable[str] !== "undefined", `Не существует переменной с именем ${str} в
+      --> ${node.outerHTML}
+      или её значение не определено`)
+    }
+    result.push(str)
+    text = text.slice(end + 2, text.length)
+    if (indexOf(text, "{{") != -1) {
+        return VMnesting(text, result, observable, node)
+    }
+    return result;
+}
+
 function syncVMOption(node, observable, inner, ifObserved) {
     let text;
     let nodeInner = node.innerHTML;
@@ -122,6 +125,8 @@ function syncVMOption(node, observable, inner, ifObserved) {
     const indexTwo = indexOf(text, '}}');
     if (!ifObserved) {
         for (let value of VMnesting(text, "", observable, node)) {
+           // const res = new Function('observable', `return observable.${value}`)(observable);
+
             observe(value, () => {
                 syncVM(node, observable, nodeInner, true);
             });
@@ -162,4 +167,3 @@ function syncVMOption(node, observable, inner, ifObserved) {
         }
     }
 }
-

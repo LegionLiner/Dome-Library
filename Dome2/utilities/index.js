@@ -115,3 +115,7 @@ export function findIdStore(observable, value) {
         return observable[value].id;
     }
 }
+
+export function sameValue(val1, val2) {
+    return Object.is(val1, val2)
+}

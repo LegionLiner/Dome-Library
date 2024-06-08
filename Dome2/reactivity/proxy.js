@@ -1,5 +1,5 @@
 import { notify } from "./signals.js";
-import { defineProperty, isObject } from "../utilities/index.js";
+import { defineProperty, isObject, sameValue } from "../utilities/index.js";
 import { globalRefs } from "./ref.js";
 
 export function makeProxy(data) {
@@ -37,12 +37,15 @@ export function weakProxy(data, id) {
             return target[key];
         },
         set(target, key, value) {
-            target[key] = value;
+            if (!sameValue(target[key], value)) {
+                target[key] = value;
 
-            if (key !== '_value') {
-                globalRefs[target.id]?.watchers.forEach(watcher => watcher.call(null, value));
+                if (key !== '_value') {
+                    globalRefs[target.id]?.watchers.forEach(watcher => watcher.call(null, value));
+                }
+
+                notify(target.id);
             }
-            notify(target.id);
 
             return true;
         },
