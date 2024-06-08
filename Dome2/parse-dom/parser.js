@@ -1,4 +1,4 @@
-import { qsa, index, errThrower } from "../utilities/index.js";
+import { qsa, index, errThrower, findValueComposition, findValue } from "../utilities/index.js";
 import { syncNode, syncValue, syncOnce, syncAsHtml, syncSelect, syncMustaches } from "./syncModel/index.js";
 import { syncCondition } from "./syncCondition/syncCondition.js";
 import { syncBind, syncEvents, syncStyles, syncRefs } from "./syncBind/index.js";
@@ -6,7 +6,7 @@ import { syncFor } from "./syncFor/syncFor.js";
 
 export function parseDOM(parentNode, observable) {
     if (!observable) return;
-    
+
     // парс DOM, ищем все атрибуты в node
     if (observable.styleElement) {
         clonedNodes.forEach((node) => {
@@ -17,7 +17,7 @@ export function parseDOM(parentNode, observable) {
     const forDirectives = qsa(`${parentNode} [d-for]`);
     forDirectives.forEach((node) => {
         errThrower(
-            node.attributes['d-for'].value, 
+            node.attributes['d-for'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
@@ -34,7 +34,7 @@ export function parseDOM(parentNode, observable) {
     const conditionDirectives = qsa(`${parentNode} [d-if]`);
     conditionDirectives.forEach((node) => {
         errThrower(
-            node.attributes['d-if'].value, 
+            node.attributes['d-if'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
@@ -44,7 +44,7 @@ export function parseDOM(parentNode, observable) {
     const bindDirectives = qsa(`${parentNode} [d-bind]`);
     bindDirectives.forEach((node) => {
         errThrower(
-            node.attributes['d-bind'].value, 
+            node.attributes['d-bind'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
@@ -62,7 +62,7 @@ export function parseDOM(parentNode, observable) {
 
     onceDirectives.forEach((node) => {
         errThrower(
-            node.attributes['d-once'].value, 
+            node.attributes['d-once'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
@@ -70,14 +70,14 @@ export function parseDOM(parentNode, observable) {
     });
     htmlDirectives.forEach((node) => {
         errThrower(
-            node.attributes['d-html'].value, 
+            node.attributes['d-html'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
         syncAsHtml(node, observable, node.attributes['d-html'].value);
     });
     textDirectives.forEach((node) => {
-        errThrower(node.attributes['d-text'].value, 
+        errThrower(node.attributes['d-text'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
@@ -89,7 +89,7 @@ export function parseDOM(parentNode, observable) {
     });
     modelDirectives.forEach((node) => {
         errThrower(
-            node.attributes['d-model'].value, 
+            node.attributes['d-model'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
@@ -97,7 +97,7 @@ export function parseDOM(parentNode, observable) {
     });;
     eventDirectives.forEach((node) => {
         errThrower(
-            node.attributes['d-on'].value, 
+            node.attributes['d-on'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
@@ -105,7 +105,7 @@ export function parseDOM(parentNode, observable) {
     });
     refDirectives.forEach((node) => {
         errThrower(
-            node.attributes['d-ref'].value, 
+            node.attributes['d-ref'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
@@ -119,7 +119,9 @@ export function parseComponentDOM(parentNode, observable, replace) {
 
     const clonedNodes = [];
     if (parentNode.startsWith('d-') && replace) {
-        replaceNodes(document.querySelector(parentNode), parentNode, clonedNodes);
+        const el = document.querySelector(parentNode);
+        parseProps(el, observable);
+        replaceNodes(el, parentNode, clonedNodes);
     }
     if (observable.styleElement) {
         clonedNodes.forEach((node) => {
@@ -131,7 +133,7 @@ export function parseComponentDOM(parentNode, observable, replace) {
     const forDirectives = qsa(`[${parentNode}][d-for]`);
     forDirectives.forEach((node) => {
         errThrower(
-            node.attributes['d-for'].value, 
+            node.attributes['d-for'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
@@ -148,7 +150,7 @@ export function parseComponentDOM(parentNode, observable, replace) {
     const conditionDirectives = qsa(`[${parentNode}][d-if]`);
     conditionDirectives.forEach((node) => {
         errThrower(
-            node.attributes['d-if'].value, 
+            node.attributes['d-if'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
@@ -159,7 +161,7 @@ export function parseComponentDOM(parentNode, observable, replace) {
     const bindDirectives = qsa(`[${parentNode}][d-bind]`);
     bindDirectives.forEach((node) => {
         errThrower(
-            node.attributes['d-bind'].value, 
+            node.attributes['d-bind'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
@@ -177,7 +179,7 @@ export function parseComponentDOM(parentNode, observable, replace) {
 
     onceDirectives.forEach((node) => {
         errThrower(
-            node.attributes['d-once'].value, 
+            node.attributes['d-once'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
@@ -185,14 +187,14 @@ export function parseComponentDOM(parentNode, observable, replace) {
     });
     htmlDirectives.forEach((node) => {
         errThrower(
-            node.attributes['d-html'].value, 
+            node.attributes['d-html'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
         syncAsHtml(node, observable, node.attributes['d-html'].value);
     });
     textDirectives.forEach((node) => {
-        errThrower(node.attributes['d-text'].value, 
+        errThrower(node.attributes['d-text'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
@@ -204,7 +206,7 @@ export function parseComponentDOM(parentNode, observable, replace) {
     });
     modelDirectives.forEach((node) => {
         errThrower(
-            node.attributes['d-model'].value, 
+            node.attributes['d-model'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
@@ -212,7 +214,7 @@ export function parseComponentDOM(parentNode, observable, replace) {
     });;
     eventDirectives.forEach((node) => {
         errThrower(
-            node.attributes['d-on'].value, 
+            node.attributes['d-on'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
@@ -220,7 +222,7 @@ export function parseComponentDOM(parentNode, observable, replace) {
     });
     refDirectives.forEach((node) => {
         errThrower(
-            node.attributes['d-ref'].value, 
+            node.attributes['d-ref'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
@@ -246,7 +248,7 @@ export function parseForElementDOM(parentNode, observable) {
     const forDirectives = qsa(`[${parentNode}] [d-for]`);
     forDirectives.forEach((node) => {
         errThrower(
-            node.attributes['d-for'].value, 
+            node.attributes['d-for'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
@@ -263,7 +265,7 @@ export function parseForElementDOM(parentNode, observable) {
     const conditionDirectives = qsa(`[${parentNode}] [d-if]`);
     conditionDirectives.forEach((node) => {
         errThrower(
-            node.attributes['d-if'].value, 
+            node.attributes['d-if'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
@@ -273,7 +275,7 @@ export function parseForElementDOM(parentNode, observable) {
     const bindDirectives = qsa(`[${parentNode}] [d-bind]`);
     bindDirectives.forEach((node) => {
         errThrower(
-            node.attributes['d-bind'].value, 
+            node.attributes['d-bind'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
@@ -291,7 +293,7 @@ export function parseForElementDOM(parentNode, observable) {
 
     onceDirectives.forEach((node) => {
         errThrower(
-            node.attributes['d-once'].value, 
+            node.attributes['d-once'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
@@ -299,14 +301,14 @@ export function parseForElementDOM(parentNode, observable) {
     });
     htmlDirectives.forEach((node) => {
         errThrower(
-            node.attributes['d-html'].value, 
+            node.attributes['d-html'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
         syncAsHtml(node, observable, node.attributes['d-html'].value);
     });
     textDirectives.forEach((node) => {
-        errThrower(node.attributes['d-text'].value, 
+        errThrower(node.attributes['d-text'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
@@ -318,7 +320,7 @@ export function parseForElementDOM(parentNode, observable) {
     });
     modelDirectives.forEach((node) => {
         errThrower(
-            node.attributes['d-model'].value, 
+            node.attributes['d-model'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
@@ -326,7 +328,7 @@ export function parseForElementDOM(parentNode, observable) {
     });;
     eventDirectives.forEach((node) => {
         errThrower(
-            node.attributes['d-on'].value, 
+            node.attributes['d-on'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
@@ -334,7 +336,7 @@ export function parseForElementDOM(parentNode, observable) {
     });
     refDirectives.forEach((node) => {
         errThrower(
-            node.attributes['d-ref'].value, 
+            node.attributes['d-ref'].value,
             `В узле ${node.outerHTML} атрибут обьявлен без значения`
         );
 
@@ -361,4 +363,33 @@ function setStyleAttr(node, attr) {
     for (const child of node.children) {
         setStyleAttr(child, attr);
     }
+}
+
+function parseProps(node, observable) {
+    const props = {};
+    const attrs = node.attributes;
+    if (!attrs) return {};
+
+    for (const attr of attrs) {
+        props[attr.name] = attr.value;
+    }
+
+    if (!observable.parent) return {};
+
+    for (const prop in props) {
+        observable.props[prop] = findPropValue(observable.parent, props[prop], true);
+    }
+
+
+    return props;
+}
+
+function findPropValue(observable, property, isOptions = false) {
+    if (index(property, '.')) {
+        property = property.slice(0, property.lastIndexOf('.'))
+    }
+    if (isOptions) {
+        return findValue(observable, property)
+    }
+    return findValueComposition(observable, property)
 }

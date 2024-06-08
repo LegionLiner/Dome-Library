@@ -7,20 +7,23 @@ import {
     style,
     method,
     ref,
+    defineProps,
 } from "../Dome2/dome.js";
 
 defineComponent(() => {
     defineEmits(['click']);
+    defineProps(['show', 'showArray']);
 
-    ref(['text'], 'Click me');
+    const text = ref(['text'], true);
 
     method('click', () => {
+        text.value = !text.value;
         emit('click');
     });
 
     template(`
         <button d-on="click: click">
-            <span d-text="text + '!'"></span>
+            <span d-text="text ? 'Hide' : 'Show'"></span>
         </button>`,
     'd-button');
 

@@ -125,7 +125,7 @@ const keywordExp = ['arguments', 'await', 'break', 'case', 'catch', 'class', 'co
     'debugger', 'default', 'delete', 'do', 'else', 'export', 'extends', 'finally', 'for', 'function', 
     'if', 'import', 'let', 'new', 'return', 'super', 'switch', 'throw', 'try', 'var', 'void', 'while',
     'with', 'yield', 'this', 'null', 'true', 'false', 'undefined', '+', '-', '++', '--', '/', '%',
-    '==', '===', '!=', '!==', '<', '>', '<=', '>=', '&&', '||', '!', 'in', 'instanceof', '*', '**'];
+    '==', '===', '!=', '!==', '<', '>', '<=', '>=', '&&', '||', '!', 'in', 'instanceof', '*', '**', '?', ":"];
 
 export const notExpression = Symbol('notExpression');
 

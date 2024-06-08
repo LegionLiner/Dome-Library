@@ -54,7 +54,7 @@ onEmit('click', () => {
 })
 
 template(`
-    <d-button></d-button>
+    <d-button show="showArray"></d-button>
     <input d-text="age" d-ref="node">
     <p>{{ data.length }}</p>
     <button d-on="click: add">Add</button>
