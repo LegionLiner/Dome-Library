@@ -97,11 +97,12 @@ export function uuid() {
 export function findId(observable, value) {
     if (index(value, '.')) {
         const val = value.slice(0, value.indexOf("."))
-        return observable[val].id;
+        return observable[val].__id__;
     }
     if (typeof observable[value] !== "undefined") {
-        return observable[value].id;
+        return observable[value].__id__;
     }
+    return observable.__id__;
 }
 
 export function findIdStore(observable, value) {
@@ -112,7 +113,7 @@ export function findIdStore(observable, value) {
         return findId(observable[val], val2);
     }
     if (typeof observable[value] !== "undefined") {
-        return observable[value].id;
+        return observable[value].__id__;
     }
 }
 

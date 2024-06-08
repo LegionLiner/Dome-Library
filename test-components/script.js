@@ -57,8 +57,9 @@ template(`
     <hr>
     <div d-if="showArray">
         <div d-for="item, index in data" d-bind="item: item.id">
+            <input d-text="item.name">
             <span d-on="click: log(item)">{{ item.id }}</span>
-            <span>{{ item.name }}</span>
+            <span d-text="item.name"></span>
             <span>{{ item.age }}</span>
         </div>
     </div>

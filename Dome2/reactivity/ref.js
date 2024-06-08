@@ -13,7 +13,7 @@ export function ref(name, data) {
   let refValue = {
     // component: instance.activeComponent,
     __type__: RefType,
-    id,
+    __id__: id,
     watchers: [],
     _value: data
   };
@@ -23,7 +23,7 @@ export function ref(name, data) {
     enumerable: false,
     configurable: false,
   });
-  defineProperty(refValue, 'id', {
+  defineProperty(refValue, '__id__', {
     writable: false,
     enumerable: false,
     configurable: false,

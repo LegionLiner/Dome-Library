@@ -1,6 +1,7 @@
 import { findValueComposition, errThrower, isArray, isObject, defineProperty, uuid, findId } from "../../utilities/index.js";
 import { observe } from "../../reactivity/signals.js";
 import { parseComponentDOM, parseForElementDOM } from "../parser.js";
+import { weakProxy } from "../../reactivity/proxy.js";
 
 const allFors = {};
 export const ForType = Symbol('ForType');
@@ -28,6 +29,10 @@ export function syncFor(node, observable, property, isObserved) {
     } else {
         node = allFors[isObserved][0].el;
 
+        if (allFors[isObserved].length == value.length) {
+            return;
+        }
+
         allFors[isObserved].forEach((item, index) => {
             if (index > 0) {
                 item.el.remove();
@@ -35,16 +40,9 @@ export function syncFor(node, observable, property, isObserved) {
         })
     }
 
-    // { index: number, data: T, template: string, el: HTMLElement }
     const resultedArray = [];
 
     if (isArray(value)) {
-        // console.log(allFors[isObserved], value);
-        // TODO: соханять уникальные id у каждого элемента (key можно добавить)
-        // и каждое изменение чекать в старом макссиве список id и в новом
-        // если они совпадают, значит элемент есть, иначе либо его нет уже, 
-        // либо он только добавился
-
         value.forEach((item, index) => {
             const data = {}; // сделать прокси
 
@@ -73,7 +71,11 @@ export function syncFor(node, observable, property, isObserved) {
                     return ForType;
                 }
 
-            })
+            });
+           // console.log(data, 'data');
+            // data.data[propName].__id__ = value.__id__;
+            // data.data[propName] = weakProxy(data.data[propName], id);
+          //  console.log(data.data);
 
             resultedArray.push(data);
         })
@@ -99,6 +101,8 @@ export function syncFor(node, observable, property, isObserved) {
     } else {
         allFors[isObserved] = resultedArray;
     }
+
+  //  console.log(allFors, 'allFors');
 
     node.removeAttribute('d-for');
 }

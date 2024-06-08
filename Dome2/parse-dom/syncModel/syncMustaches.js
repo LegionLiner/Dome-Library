@@ -1,4 +1,4 @@
-import { has, errThrower, indexOf, index, findProperty, findValue, findValueComposition, findPropertyComposition, findId } from "../../utilities/index.js";
+import { has, errThrower, indexOf, index, findProperty, findValue, findValueComposition, findPropertyComposition, findId, findIdStore } from "../../utilities/index.js";
 import { observe } from "../../reactivity/signals.js";
 import { isInstance } from "../../composition/instance.js";
 
@@ -91,6 +91,7 @@ function syncVMComposition(node, observable, inner, ifObserved) {
 function VMnesting(text, observed, observable, node) {
     let flag = true;
     let result;
+    let id;
 
     observed ? result = observed : result = [];
 
@@ -101,15 +102,17 @@ function VMnesting(text, observed, observable, node) {
     if (indexOf(str, ".") != -1) {
         errThrower(findValue(observable, str), `Не существует переменной с именем ${str} в
       --> ${node.outerHTML}
-      или её значение не определено`)
-        str = findProperty(observable, str)
+      или её значение не определено`);
+
+        id = findId(observable, str);
+        str = findProperty(observable, str);
     }
     if (!flag) {
         errThrower(typeof observable[str] !== "undefined", `Не существует переменной с именем ${str} в
       --> ${node.outerHTML}
       или её значение не определено`)
     }
-    result.push(str)
+    result.push({ str, id })
     text = text.slice(end + 2, text.length)
     if (indexOf(text, "{{") != -1) {
         return VMnesting(text, result, observable, node)
@@ -125,9 +128,8 @@ function syncVMOption(node, observable, inner, ifObserved) {
     const indexTwo = indexOf(text, '}}');
     if (!ifObserved) {
         for (let value of VMnesting(text, "", observable, node)) {
-           // const res = new Function('observable', `return observable.${value}`)(observable);
-
-            observe(value, () => {
+            // const res = new Function('observable', `return observable.${value}`)(observable);
+            observe(value.id, () => {
                 syncVM(node, observable, nodeInner, true);
             });
         }

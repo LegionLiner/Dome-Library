@@ -33,7 +33,7 @@ function syncNodeOption(node, observable, property) {
 
     node.textContent = findValue(observable, property);
 
-    observe(findProperty(observable, property), () => {
+    observe(findId(observable, property), () => {
         node.textContent = findValue(observable, property);
     });
 }

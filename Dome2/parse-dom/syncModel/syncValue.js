@@ -51,20 +51,36 @@ function syncValueOption(node, observable, property) {
   errThrower(findProperty(observable, property), `Не существует переменной с именем ${property} в
   --> ${node.outerHTML}`);
 
+  const val = findPropValue(observable, property, true);
   node.value = findValue(observable, property) || "";
 
-  node.addEventListener('input', () => {
-    observable[property] = node.value;
-  });
+  if ((typeof val === 'object') && (val !== null) && (val[property.slice(0, indexOf(property, '.'))] == StoreType)) {
+    const prop = property.slice(property.lastIndexOf('.') + 1);
+    node.addEventListener('input', () => {
+      val[prop].value = node.value;
+    });
+  } else if ((typeof val === 'object') && (val !== null)) {
+    property = property.slice(property.lastIndexOf('.') + 1);
+    node.addEventListener('input', () => {
+      val[property] = node.value;
+    });
+  } else {
+    node.addEventListener('input', () => {
+      val[property] = node.value;
+    });
+  }
 
-  observe(findProperty(observable, property), () => {
-    node.value = findValue(observable, property);
+  observe(val.__id__, () => {
+    node.value = findValue(val, property);
   });
 }
 
-function findPropValue(observable, property) {
+function findPropValue(observable, property, isOptions = false) {
   if (index(property, '.')) {
     property = property.slice(0, property.lastIndexOf('.'))
+  }
+  if (isOptions) {
+    return findValue(observable, property)
   }
   return findValueComposition(observable, property)
 }

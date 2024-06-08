@@ -23,9 +23,9 @@ export function makeProxy(data) {
 export function weakProxy(data, id) {
     const validator = {
         get(target, key) {
-            if (isObject(target[key]) && (!target[key].id) && (key !== 'watchers')) {
-                target[key].id = id;
-                defineProperty(target[key], 'id', {
+            if (isObject(target[key]) && (!target[key].__id__) && (key !== 'watchers')) {
+                target[key].__id__ = id;
+                defineProperty(target[key], '__id__', {
                     writable: false,
                     enumerable: false,
                     configurable: false,
@@ -41,10 +41,10 @@ export function weakProxy(data, id) {
                 target[key] = value;
 
                 if (key !== '_value') {
-                    globalRefs[target.id]?.watchers.forEach(watcher => watcher.call(null, value));
+                    globalRefs[target.__id__]?.watchers.forEach(watcher => watcher.call(null, value));
                 }
 
-                notify(target.id);
+                notify(target.__id__);
             }
 
             return true;

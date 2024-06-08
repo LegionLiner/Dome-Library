@@ -32,21 +32,21 @@ export function makeComputed(computeds, instance) {
 
 export function computed(name, method, deps) {
   const computed = {
-    id: uuid(),
+    __id__: uuid(),
     __type__: ComputedType,
     watchers: [],
   };
 
   let lastValue;
 
-  observe(computed.id, () => {
+  observe(computed.__id__, () => {
     computed.watchers.forEach(watcher => watcher.call(null));
   });
 
   deps.forEach(el => {
-    observe(el.id, () => {
+    observe(el.__id__, () => {
       if (lastValue !== computed.value) {
-        notify(computed.id);
+        notify(computed.__id__);
       }
     })
   });
