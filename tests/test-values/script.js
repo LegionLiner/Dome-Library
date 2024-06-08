@@ -84,42 +84,42 @@ method('search', () => {
         })
 });
 
-method('goTo', () => {
-    fetch(`https://api.github.com/users/${login}`)
+method('goTo', (log) => {
+    fetch(`https://api.github.com/users/${log}`)
         .then((res) => {
             return res.json()
         }).then(githubUser => {
             if (githubUser.message == "Not Found") {
                 return new Error("БЛЯТ!")
             }
-            avatarUrl = githubUser.avatar_url;
-            login = githubUser.login;
-            bio = githubUser.bio;
-            createdAt = githubUser.created_at;
-            followers.followersCount = githubUser.followers;
-            followers.followersUrls = githubUser.followers_url;
-            following.followingCount = githubUser.following;
-            following.followingUrls = githubUser.following_url;
+            avatarUrl.value = githubUser.avatar_url;
+            login.value = githubUser.login;
+            bio.value = githubUser.bio;
+            createdAt.value = githubUser.created_at;
+            followers.value.followersCount = githubUser.followers;
+            followers.value.followersUrls = githubUser.followers_url;
+            following.value.followingCount = githubUser.following;
+            following.value.followingUrls = githubUser.following_url;
         }).then(() => {
-            fetch(followers.followersUrls)
+            fetch(followers.value.followersUrls)
                 .then((res) => {
-                    return res.json()
+                    return res.json();
                 }).then((res) => {
-                    followers.followersArray = res
+                    followers.value.followersArray = res;
                 })
         }).then(() => {
-            fetch(`https://api.github.com/users/${login}/following`)
+            fetch(`https://api.github.com/users/${log}/following`)
                 .then((res) => {
-                    return res.json()
+                    return res.json();
                 }).then((res) => {
-                    following.followingArray = res
+                    following.value.followingArray = res;
                 })
         }).then(() => {
-            fetch(`https://api.github.com/users/${login}/repos`)
+            fetch(`https://api.github.com/users/${log}/repos`)
                 .then((res) => {
-                    return res.json()
+                    return res.json();
                 }).then((res) => {
-                    repos = res;
+                    repos.value = res;
                 })
         })
 });

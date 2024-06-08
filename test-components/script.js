@@ -6,6 +6,7 @@ import {
     method,
     defineRoute,
     defineRouter,
+    onMounted,
 } from "../Dome2/dome.js";
 import { areaStore } from "./store.js";
 
@@ -27,6 +28,7 @@ const data = ref(['data'], [
     }
 ]);
 const age = ref(['age'], 25);
+ref(['node'], null);
 
 computed('data2', () => {
     return data.value.filter(item => item.age > age.value);
@@ -49,7 +51,7 @@ method('log', (val) => {
 });
 
 template(`
-    <input d-text="age">
+    <input d-text="age" d-ref="node">
     <button d-on="click: toggle">Toggle</button>
     <p>{{ data.length }}</p>
     <button d-on="click: add">Add</button>

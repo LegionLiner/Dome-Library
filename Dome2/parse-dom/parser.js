@@ -1,7 +1,7 @@
 import { qsa, index, errThrower } from "../utilities/index.js";
 import { syncNode, syncValue, syncOnce, syncAsHtml, syncSelect, syncVM } from "./syncModel/index.js";
 import { ifNode } from "./syncCondition/syncCondition.js";
-import { syncBind, syncClicks, syncStyles } from "./syncBind/index.js";
+import { syncBind, syncClicks, syncStyles, syncRefs } from "./syncBind/index.js";
 import { syncFor } from "./syncFor/syncFor.js";
 
 export function parseDOM(parentNode, observable) {
@@ -31,7 +31,8 @@ export function parseDOM(parentNode, observable) {
     const once = qsa(`${parentNode} [d-once]`);
     const nodes = qsa(`${parentNode} [d-text]`);
     const model = qsa(`${parentNode} [d-model]`);
-    const clicks = qsa(`${parentNode} [d-on]`)
+    const clicks = qsa(`${parentNode} [d-on]`);
+    const refs = qsa(`${parentNode} [d-ref]`);
     // для кадого найденного элемента с атрибутом x вызываем функцию,
     // связанную c этим x атрибутом
     nodes.forEach((node) => {
@@ -57,6 +58,10 @@ export function parseDOM(parentNode, observable) {
     clicks.forEach((node) => {
         errThrower(node.attributes['d-on'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
         syncClicks(node, observable, node.attributes['d-on'].value);
+    });
+    refs.forEach((node) => {
+        errThrower(node.attributes['d-ref'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+        syncRefs(node, observable, node.attributes['d-ref'].value);
     });
     // syncStyles(parentNode)
 }
@@ -94,6 +99,7 @@ export function parseComponentDOM(parentNode, observable, replace) {
     const once = qsa(`[${parentNode}][d-once]`);
     const nodes = qsa(`[${parentNode}][d-text]`);
     const model = qsa(`[${parentNode}][d-model]`);
+    const refs = qsa(`[${parentNode}][d-ref]`);
     // для кадого найденного элемента с атрибутом x вызываем функцию,
     // связанную c этим x атрибутом
 
@@ -121,6 +127,10 @@ export function parseComponentDOM(parentNode, observable, replace) {
     clicks.forEach((node) => {
         errThrower(node.attributes['d-on'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
         syncClicks(node, observable, node.attributes['d-on'].value);
+    });
+    refs.forEach((node) => {
+        errThrower(node.attributes['d-ref'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+        syncRefs(node, observable, node.attributes['d-ref'].value);
     });
 
     if (!replace) {
@@ -159,6 +169,7 @@ export function parseForElementDOM(parentNode, observable) {
     const nodes = qsa(`[${parentNode}] [d-text]`);
     const model = qsa(`[${parentNode}] [d-model]`);
     const clicks = qsa(`[${parentNode}] [d-on]`);
+    const refs = qsa(`[${parentNode}] [d-ref]`);
     // для кадого найденного элемента с атрибутом x вызываем функцию,
     // связанную c этим x атрибутом
 
@@ -185,6 +196,10 @@ export function parseForElementDOM(parentNode, observable) {
     clicks.forEach((node) => {
         errThrower(node.attributes['d-on'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
         syncClicks(node, observable, node.attributes['d-on'].value);
+    });
+    refs.forEach((node) => {
+        errThrower(node.attributes['d-ref'].value, `В узле ${node.outerHTML} атрибут обьявлен без значения`)
+        syncRefs(node, observable, node.attributes['d-ref'].value);
     });
 }
 
