@@ -9,7 +9,7 @@ import { computed, isComputed } from "./reactivity/computed.js";
 import { method } from "./reactivity/method.js";
 import { mount, unmount } from "./composition/mount.js";
 import { onMounted, onUnmounted, onCreated } from "./composition/hooks/index.js";
-import { template } from "./component-api/template.js";
+import { template, style } from "./component-api/template.js";
 import { defineComponent, defineComponents, Component } from "./component-api/define.js";
 import { defineProps, defineEmits, onEmit, emit } from "./component-api/macroses.js";
 import { defineStore, useStore } from "./store-api/index.js";
@@ -129,6 +129,7 @@ export {
     onCreated,
 
     template,
+    style,
     defineComponent,
     defineComponents,
     Component,

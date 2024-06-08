@@ -40,26 +40,35 @@ function extractArguments(property, data, node) {
     return resArgs;
 }
 
-export function syncClicks(node, observable, property) {
+export function syncEvents(node, observable, property) {
     let hooks;
     if (index(property, ":")) {
         hooks = clicksHelper(property)
         property = property.slice(indexOf(property, ":") + 2, property.length)
     }
     let f = property.slice(0, index(property, "(") ? indexOf(property, "(") : property.length);
-    errThrower(instance.methods[f], `Не существует метода с именем ${property} в
+
+    if ((!observable?.methods) || (!observable?.methods[f])) {
+        if (!observable?.methods) {
+            observable.methods = {};
+        }
+        observable.methods[f] = instance.methods[f];
+    }
+    
+    errThrower(observable.methods[f], `Не существует метода с именем ${property} в
     --> ${node.outerHTML}`);
 
     node.addEventListener(hooks.e, (event) => {
         let args = extractArguments(property, observable, node);
         if (hooks.c) {
             if (event.key.toLowerCase() == hooks.c) {
-                instance.methods[f].call(observable, ...args);
+                observable.methods[f].call(observable, ...args);
             }
         } else {
-            instance.methods[f].call(observable, ...args);
+            observable.methods[f].call(observable, ...args);
         }
     });
 
+    // console.log(node, 'node');
     node.removeAttribute('d-on');
 }

@@ -3,12 +3,11 @@ import {
     computed,
     mount,
     template,
+    style,
     method,
-    defineRoute,
-    defineRouter,
-    onMounted,
+    onEmit,
 } from "../Dome2/dome.js";
-import { areaStore } from "./store.js";
+import button from "./button.js";
 
 const data = ref(['data'], [
     {
@@ -50,9 +49,13 @@ method('log', (val) => {
     console.log(val.id, 'log');
 });
 
+onEmit('click', () => {
+    showArray.value = !showArray.value;
+})
+
 template(`
+    <d-button></d-button>
     <input d-text="age" d-ref="node">
-    <button d-on="click: toggle">Toggle</button>
     <p>{{ data.length }}</p>
     <button d-on="click: add">Add</button>
     <button d-on="click: remove">Remove</button>
@@ -66,7 +69,7 @@ template(`
         </div>
     </div>
     <div d-else>
-        <p>More than <span d-text="age"></span> y.o <span d-text="data2.length"></span></p>
+        <p>More than <span d-text="age + 50"></span> y.o <span d-text="data2.length"></span></p>
         <div d-for="item in data2">
             <span>{{ item.id }}</span>
             <span>{{ item.name }}</span>
@@ -74,5 +77,14 @@ template(`
         </div>
     </div>
 `, ".app");
+
+style(`
+    input {
+        border: 1px solid black;
+        border-radius: 5px;
+        padding: 5px;
+        margin: 5px;
+    }
+`, true);
 
 mount('.app');

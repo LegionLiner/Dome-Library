@@ -2,7 +2,7 @@ import { has, errThrower, indexOf, index, findProperty, findValue, findValueComp
 import { observe } from "../../reactivity/signals.js";
 import { isInstance } from "../../composition/instance.js";
 
-export function syncVM(node, observable) {
+export function syncMustaches(node, observable) {
     if (has(node, 'd-for')) {
         return;
     }
@@ -128,9 +128,8 @@ function syncVMOption(node, observable, inner, ifObserved) {
     const indexTwo = indexOf(text, '}}');
     if (!ifObserved) {
         for (let value of VMnesting(text, "", observable, node)) {
-            // const res = new Function('observable', `return observable.${value}`)(observable);
             observe(value.id, () => {
-                syncVM(node, observable, nodeInner, true);
+                syncMustaches(node, observable, nodeInner, true);
             });
         }
     }
@@ -148,7 +147,7 @@ function syncVMOption(node, observable, inner, ifObserved) {
                 node.innerHTML = text;
             }
             if (indexOf(node.innerHTML, '{{') > 0) {
-                syncVM(node, observable, "", true);
+                syncMustaches(node, observable, "", true);
             }
         } else {
             if (indexTwo) {
@@ -164,7 +163,7 @@ function syncVMOption(node, observable, inner, ifObserved) {
                 node.innerHTML = previousText + text;
             }
             if (indexOf(node.innerHTML, '{{') > 0) {
-                syncVM(node, observable, "", true);
+                syncMustaches(node, observable, "", true);
             }
         }
     }

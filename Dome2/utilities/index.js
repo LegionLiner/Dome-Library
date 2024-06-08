@@ -120,3 +120,50 @@ export function findIdStore(observable, value) {
 export function sameValue(val1, val2) {
     return Object.is(val1, val2)
 }
+
+const keywordExp = ['arguments', 'await', 'break', 'case', 'catch', 'class', 'const', 'continue', 
+    'debugger', 'default', 'delete', 'do', 'else', 'export', 'extends', 'finally', 'for', 'function', 
+    'if', 'import', 'let', 'new', 'return', 'super', 'switch', 'throw', 'try', 'var', 'void', 'while',
+    'with', 'yield', 'this', 'null', 'true', 'false', 'undefined', '+', '-', '++', '--', '/', '%',
+    '==', '===', '!=', '!==', '<', '>', '<=', '>=', '&&', '||', '!', 'in', 'instanceof', '*', '**'];
+
+export const notExpression = Symbol('notExpression');
+
+export function parseExpression(expression, observable) {
+    if (isExpression(expression)) {
+        let values = expression.split(' ');
+        
+        const data = [];
+
+        for (let i = 0; i < values.length; i++) {
+            const val = values[i];
+            if (!keywordExp.includes(val) && observable[val]) {
+                data[i] = observable[val].value;
+            } else {
+                values.splice(i, 1);
+                data.splice(i, 1);
+                i--;
+            }
+        }
+
+        return {
+            result: new Function(...values, 'return ' + expression)(...data),
+            props: values
+        };
+    }
+
+    return notExpression;
+}
+
+export function isExpression(expression) {
+    const values = expression.split(' ');
+    return (values.length + keywordExp.length) !== union(keywordExp, values).size;
+}
+
+function union(keywords, arr) {
+    const set = new Set(keywords);
+    for (const elem of arr) {
+        set.add(elem);
+    }
+    return set;
+  }

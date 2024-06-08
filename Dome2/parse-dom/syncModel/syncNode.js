@@ -1,4 +1,4 @@
-import { has, errThrower, findProperty, findValue, findIdStore, findValueComposition, findPropertyComposition, findId } from "../../utilities/index.js";
+import { has, errThrower, findProperty, findValue, findIdStore, findValueComposition, findPropertyComposition, findId, parseExpression, notExpression } from "../../utilities/index.js";
 import { observe } from "../../reactivity/signals.js";
 import { isInstance } from "../../composition/instance.js";
 
@@ -17,6 +17,18 @@ export function syncNode(node, observable, property) {
 }
 
 function syncNodeCompositon(node, observable, property) {
+    const expResult = parseExpression(property, observable);
+    if (expResult !== notExpression) {
+        node.textContent = expResult.result;
+
+        expResult.props.forEach(prop => {
+            observe(findId(observable, prop) || findIdStore(prop, property), () => {
+                node.textContent = parseExpression(property, observable).result;
+            });
+        });
+        return;
+    }
+
     errThrower(findPropertyComposition(observable, property), `Не существует переменной с именем ${property} в
     --> ${node.outerHTML}`);
 

@@ -1,4 +1,4 @@
-import { has, errThrower, findProperty, findValue, findValueComposition, findPropertyComposition } from "../../utilities/index.js";
+import { has, errThrower, findProperty, findValue, findValueComposition, findPropertyComposition, parseExpression, notExpression } from "../../utilities/index.js";
 import { isInstance } from "../../composition/instance.js";
 
 export function syncOnce(node, observable, property) {
@@ -15,6 +15,12 @@ export function syncOnce(node, observable, property) {
 }
 
 function syncOnceCompositon(node, observable, property) {
+    const expResult = parseExpression(property, observable);
+    if (expResult !== notExpression) {
+        node.textContent = expResult.result;
+        return;
+    }
+
     errThrower(findPropertyComposition(observable, property), `Не существует переменной с именем ${property} в
     --> ${node.outerHTML}`);
 

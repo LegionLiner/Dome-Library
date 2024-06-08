@@ -2,6 +2,8 @@ import { has, index, indexOf, errThrower, findProperty, findValue, findValueComp
 import { isInstance } from "../../composition/instance.js";
 import { observe } from "../../reactivity/signals.js";
 
+// TODO: переписать иф, чтобы хранились все элементы и к чему они относятся, чтобы убрать атрибуты из ДОМ
+
 function ifHidder(node) {
     if (node.nextElementSibling) {
         if (has(node.nextElementSibling, 'd-else-if') || has(node.nextElementSibling, 'd-else')) {
@@ -39,11 +41,11 @@ function ifValueSearcher(observable, property, node, flag, beenObserved) {
     if (!flag) {
         if (isInstance) {
             observe(findId(observable, prop), () => {
-                ifNode(node, observable, property, true, beenObserved);
+                syncCondition(node, observable, property, true, beenObserved);
             });
         } else {
             observe(prop, () => {
-                ifNode(node, observable, property, true, beenObserved);
+                syncCondition(node, observable, property, true, beenObserved);
             });
         }
     }
@@ -65,7 +67,7 @@ function ifHelper(node, observe, flag) {
         flag: true
     }
 }
-export function ifNode(node, observable, property, flag, beenObserved) {
+export function syncCondition(node, observable, property, flag, beenObserved) {
     if (has(node, 'd-for')) {
         return;
     }
@@ -73,7 +75,7 @@ export function ifNode(node, observable, property, flag, beenObserved) {
     if (!beenObserved) {
         needToObserve.willObserve.forEach((item) => {
             observe(item, () => {
-                ifNode(node, observable, property, true, beenObserved);
+                syncCondition(node, observable, property, true, beenObserved);
             });
         })
     }
@@ -87,7 +89,7 @@ export function ifNode(node, observable, property, flag, beenObserved) {
         // есть ли сосед с атрибутами d-else-if или d-else
         if (node.nextElementSibling) {
             if (has(node.nextElementSibling, 'd-else-if')) {
-                ifNode(
+                syncCondition(
                     node.nextElementSibling,
                     observable,
                     node.nextElementSibling.attributes['d-else-if'].value, flag, beenObserved
@@ -103,4 +105,5 @@ export function ifNode(node, observable, property, flag, beenObserved) {
         ifHidder(node)
     }
 
+    node.removeAttribute('d-if');
 }
