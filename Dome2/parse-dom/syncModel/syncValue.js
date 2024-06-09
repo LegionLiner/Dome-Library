@@ -29,16 +29,16 @@ function syncValueCompositon(node, observable, property) {
   if ((typeof val === 'object') && (val !== null) && (val[property.slice(0, indexOf(property, '.'))] == StoreType)) {
     const prop = property.slice(property.lastIndexOf('.') + 1);
     node.addEventListener('input', () => {
-      val[prop].value = node.value;
+      val[prop].value = returnNumber(node.value);
     });
   } else if ((typeof val === 'object') && (val !== null)) {
     property = property.slice(property.lastIndexOf('.') + 1);
     node.addEventListener('input', () => {
-      val[property] = node.value;
+      val[property] = returnNumber(node.value);
     });
   } else {
     node.addEventListener('input', () => {
-      observable[property].value = node.value;
+      observable[property].value = returnNumber(node.value);
     });
   }
 
@@ -83,4 +83,11 @@ function findPropValue(observable, property, isOptions = false) {
     return findValue(observable, property)
   }
   return findValueComposition(observable, property)
+}
+
+function returnNumber(val) {
+  if (!isNaN(parseFloat(val)) && isFinite(val)) {
+    return +val;
+  }
+  return val;
 }

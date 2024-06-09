@@ -12,7 +12,7 @@ import {
 
 defineComponent(() => {
     defineEmits(['click']);
-    defineProps(['show', 'showArray']);
+    const props = defineProps(['show', 'showArray']);
 
     const text = ref(['text'], true);
 

@@ -48,27 +48,39 @@ export function syncEvents(node, observable, property) {
     }
     let f = property.slice(0, index(property, "(") ? indexOf(property, "(") : property.length);
 
-    if ((!observable?.methods) || (!observable?.methods[f])) {
-        if (!observable?.methods) {
-            observable.methods = {};
-        }
-        observable.methods[f] = instance.methods[f];
+    let method;
+
+    if (findPropValue(observable, f, true)) {
+        method = findPropValue(observable, f, true)[f.slice(f.indexOf('.') + 1)];
+    } else if ((!observable?.methods) || (!observable?.methods[f])) {
+        method = instance.methods[f];
+    } else {
+        method = observable.methods[f];
     }
     
-    errThrower(observable.methods[f], `Не существует метода с именем ${property} в
+    errThrower(method, `Не существует метода с именем ${property} в
     --> ${node.outerHTML}`);
 
     node.addEventListener(hooks.e, (event) => {
         let args = extractArguments(property, observable, node);
         if (hooks.c) {
             if (event.key.toLowerCase() == hooks.c) {
-                observable.methods[f].call(observable, ...args);
+                method.call(observable, ...args);
             }
         } else {
-            observable.methods[f].call(observable, ...args);
+            method.call(observable, ...args);
         }
     });
-
-    // console.log(node, 'node');
+    
     node.removeAttribute('d-on');
 }
+
+function findPropValue(observable, property, isOptions = false) {
+    if (index(property, '.')) {
+      property = property.slice(0, property.lastIndexOf('.'))
+    }
+    if (isOptions) {
+      return findValue(observable, property)
+    }
+    return findValueComposition(observable, property)
+  }

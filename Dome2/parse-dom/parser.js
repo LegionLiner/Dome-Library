@@ -380,7 +380,6 @@ function parseProps(node, observable) {
         observable.props[prop] = findPropValue(observable.parent, props[prop], true);
     }
 
-
     return props;
 }
 

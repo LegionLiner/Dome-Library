@@ -8,6 +8,7 @@ import {
     onEmit,
 } from "../Dome2/dome.js";
 import button from "./button.js";
+import { areaStore } from "./store.js";
 
 const data = ref(['data'], [
     {
@@ -54,6 +55,8 @@ onEmit('click', () => {
 })
 
 template(`
+    <p d-on="click: areaStore.increment">fdsf</p>
+    <p d-text="areaStore.a"></p>
     <d-button show="showArray"></d-button>
     <input d-text="age" d-ref="node">
     <p>{{ data.length }}</p>
