@@ -72,10 +72,6 @@ export function syncFor(node, observable, property, isObserved) {
                 }
 
             });
-           // console.log(data, 'data');
-            // data.data[propName].__id__ = value.__id__;
-            // data.data[propName] = weakProxy(data.data[propName], id);
-          //  console.log(data.data);
 
             resultedArray.push(data);
         })
@@ -101,8 +97,6 @@ export function syncFor(node, observable, property, isObserved) {
     } else {
         allFors[isObserved] = resultedArray;
     }
-
-  //  console.log(allFors, 'allFors');
 
     node.removeAttribute('d-for');
 }

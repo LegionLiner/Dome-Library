@@ -1,4 +1,4 @@
-import { qsa, index, errThrower, findValueComposition, findValue } from "../utilities/index.js";
+import { qs, qsa, index, errThrower, findValueComposition, findValue } from "../utilities/index.js";
 import { syncNode, syncValue, syncOnce, syncAsHtml, syncSelect, syncMustaches } from "./syncModel/index.js";
 import { syncCondition } from "./syncCondition/syncCondition.js";
 import { syncBind, syncEvents, syncStyles, syncRefs } from "./syncBind/index.js";
@@ -114,9 +114,9 @@ export function parseDOM(parentNode, observable) {
     // syncStyles(parentNode)
 }
 
-export function parseComponentDOM(parentNode, observable, replace) {
+export function parseComponentDOM(parentNode, observable, replace, slot) {
     if (!observable) return;
-
+    
     const clonedNodes = [];
     if (parentNode.startsWith('d-') && replace) {
         const el = document.querySelector(parentNode);
@@ -128,8 +128,14 @@ export function parseComponentDOM(parentNode, observable, replace) {
             setStyleAttr(node, observable.styleElement);
         })
     }
-
+    
     // парс DOM, ищем все атрибуты в node
+    const slotNode = qs(`[${parentNode}] slot`);
+    if (slotNode) {
+        slotNode.insertAdjacentHTML("beforebegin", slot);
+        slotNode.remove();
+    }
+
     const forDirectives = qsa(`[${parentNode}][d-for]`);
     forDirectives.forEach((node) => {
         errThrower(

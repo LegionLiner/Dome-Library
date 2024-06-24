@@ -24,9 +24,8 @@ export function mount(el) {
     parseComponents(instance);
 
     const names = [...new Set(globalArr.map((item) => item.name))];
-
     globalArr.forEach((item) => {
-        parseComponentDOM(item.name, item.inst, names);
+        parseComponentDOM(item.name, item.inst, names, item.slot);
         useMounted(item.name);
     });
 
@@ -83,7 +82,10 @@ function parseComponent(name, count, inst) {
         setProps(inst.components[name + '-' + (i + 1)], inst);
 
         const $el = document.querySelector(name + '-' + (i + 1));
+        
         errThrower($el, `Селектор ${name + '-' + (i + 1)} не найден`);
+
+        const slot = $el.innerHTML;
         $el.innerHTML = inst.components[name + '-' + (i + 1)].template;
         inst.components[name + '-' + (i + 1)].$el = $el;
 
@@ -93,7 +95,8 @@ function parseComponent(name, count, inst) {
         if (indexOfEl === -1) {
             globalArr.unshift({
                 name: name + '-' + (i + 1),
-                inst: inst.components[name + '-' + (i + 1)]
+                inst: inst.components[name + '-' + (i + 1)],
+                slot,
             });
         };
 
