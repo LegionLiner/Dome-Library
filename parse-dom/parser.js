@@ -8,12 +8,6 @@ export function parseDOM(parentNode, observable) {
     if (!observable) return;
 
     // парс DOM, ищем все атрибуты в node
-    if (observable.styleElement) {
-        clonedNodes.forEach((node) => {
-            setStyleAttr(node, observable.styleElement);
-        })
-    }
-
     const forDirectives = qsa(`${parentNode} [d-for]`);
     forDirectives.forEach((node) => {
         errThrower(
@@ -245,11 +239,6 @@ export function parseComponentDOM(parentNode, observable, replace, slot) {
 export function parseForElementDOM(parentNode, observable) {
     if (!observable) return;
 
-    if (observable.styleElement) {
-        clonedNodes.forEach((node) => {
-            setStyleAttr(node, observable.styleElement);
-        })
-    }
     // парс DOM, ищем все атрибуты в node
     const forDirectives = qsa(`[${parentNode}] [d-for]`);
     forDirectives.forEach((node) => {

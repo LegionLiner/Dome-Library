@@ -20,7 +20,16 @@ export function onMounted(method) {
 }
 
 export function onUnmounted(method) {
-    hooks.onUnmounted.push(method);
+    if (instance.activeComponent) {
+        if (hooks.onUnmounted[instance.activeComponent]) {
+            return hooks.onUnmounted[instance.activeComponent].push(method);
+        }
+        return hooks.onUnmounted[instance.activeComponent] = [method];
+    }
+    if (hooks.onUnmounted.instance) {
+        return hooks.onUnmounted.instance.push(method);
+    }
+    return hooks.onUnmounted.instance = [method];
 }
 
 export function onCreated(method) {

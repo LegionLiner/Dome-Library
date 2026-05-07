@@ -54,5 +54,3 @@ export function extractComponent(name, instance) {
     }
     return instance.components[name]
 }
-
-console.log(instance);

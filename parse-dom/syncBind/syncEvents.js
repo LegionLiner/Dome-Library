@@ -23,7 +23,8 @@ function extractArguments(property, data, node) {
         newProps = property.slice(startPoint + 1, endPoint).split(", ");
         newProps.forEach((item) => {
             if (index(item, "'") || index(item, '"')) {
-                resArgs.push(item)
+                // строковый литерал — убираем обрамляющие кавычки
+                resArgs.push(item.replace(/^['"`]|['"`]$/g, ''));
             } else if (!isNaN(+item)) {
                 resArgs.push(+item)
             } else {
@@ -41,17 +42,19 @@ function extractArguments(property, data, node) {
 }
 
 export function syncEvents(node, observable, property) {
-    let hooks;
+    let hooks = { e: null, c: null };
     if (index(property, ":")) {
         hooks = clicksHelper(property)
-        property = property.slice(indexOf(property, ":") + 2, property.length)
+        property = property.slice(indexOf(property, ":") + 1, property.length).trim();
     }
+    errThrower(hooks.e, `d-on требует синтаксис "event: method" в
+    --> ${node.outerHTML}`);
     let f = property.slice(0, index(property, "(") ? indexOf(property, "(") : property.length);
 
     let method;
 
-    if (findPropValue(observable, f, true)) {
-        method = findPropValue(observable, f, true)[f.slice(f.indexOf('.') + 1)];
+    if (index(f, '.') && findPropValue(observable, f, true)) {
+        method = findPropValue(observable, f, true)[f.slice(f.lastIndexOf('.') + 1)];
     } else if ((!observable?.methods) || (!observable?.methods[f])) {
         method = instance.methods[f];
     } else {

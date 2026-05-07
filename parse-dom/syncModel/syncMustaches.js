@@ -22,7 +22,7 @@ function VMnestingComposition(text, observed, observable, node) {
     let end = indexOf(text, "}}")
     let str = text.slice(start + 2, end).trim()
     if (indexOf(str, ".") != -1) {
-        errThrower(findValueComposition(observable, str), `Не существует переменной с именем ${str} в
+        errThrower(typeof findValueComposition(observable, str) !== 'undefined', `Не существует переменной с именем ${str} в
       --> ${node.outerHTML}
       или её значение не определено`)
     }
@@ -57,10 +57,10 @@ function syncVMComposition(node, observable, inner, ifObserved) {
             if (indexTwo) {
                 const value = text.slice(indexOne + 2, indexTwo).trim();
                 if (index(value, '.')) {
-                    const prop = findValueComposition(observable, value) || "";
+                    const prop = findValueComposition(observable, value) ?? "";
                     text = prop + text.slice(indexTwo + 2, text.length);
                 } else {
-                    let val = observable[value].value || ""
+                    let val = observable[value].value ?? ""
                     text = val + text.slice(indexTwo + 2, text.length);
                 }
                 node.innerHTML = text;
@@ -76,7 +76,7 @@ function syncVMComposition(node, observable, inner, ifObserved) {
                     value = findValueComposition(observable, value);
                     text = value + text.slice(indexTwo + 2, text.length);
                 } else {
-                    let val = observable[value].value || "";
+                    let val = observable[value].value ?? "";
                     text = val + text.slice(indexTwo + 2, text.length);
                 }
                 node.innerHTML = previousText + text;
@@ -100,7 +100,7 @@ function VMnesting(text, observed, observable, node) {
     let str = text.slice(start + 2, end).trim();
 
     if (indexOf(str, ".") != -1) {
-        errThrower(findValue(observable, str), `Не существует переменной с именем ${str} в
+        errThrower(typeof findValue(observable, str) !== 'undefined', `Не существует переменной с именем ${str} в
       --> ${node.outerHTML}
       или её значение не определено`);
 

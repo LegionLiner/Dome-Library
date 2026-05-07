@@ -1,6 +1,6 @@
 import { defineProperty, sameValue, uuid } from "../utilities/index.js";
 import { weakProxy } from "./proxy.js";
-import { addData, extractComponent, instance } from "../composition/instance.js";
+import { addData, instance } from "../composition/instance.js";
 import { notify } from "./signals.js";
 
 export const RefType = Symbol('RefType');

@@ -32,15 +32,15 @@ function syncBindCompositon(node, observable, property, isObserved = false) {
         if ((typeof value === 'string') || (typeof value === 'number')) {
             node.setAttribute(attrName, value);
         } else if (typeof value === 'boolean') {
-            value ? node.setAttribute(attrName, '') : 'false';
-        } else if (typeof value === 'object') {
+            value ? node.setAttribute(attrName, '') : node.removeAttribute(attrName);
+        } else if (isArray(value)) {
+            node.setAttribute(attrName, value.join(' '));
+        } else if (typeof value === 'object' && value !== null) {
             let res = '';
             for (const [key, val] of Object.entries(value)) {
                 res += `${key}: ${val}; `;
             }
             node.setAttribute(attrName, res);
-        } else if (isArray(value)) {
-            node.setAttribute(attrName, value.join(' '));
         }
 
         if (!isObserved) {
@@ -73,15 +73,15 @@ function syncBindCompositon(node, observable, property, isObserved = false) {
             if ((typeof value === 'string') || (typeof value === 'number')) {
                 node.setAttribute(attrName, value);
             } else if (typeof value === 'boolean') {
-                value ? node.setAttribute(attrName, '') : 'false';
-            } else if (typeof value === 'object') {
+                value ? node.setAttribute(attrName, '') : node.removeAttribute(attrName);
+            } else if (isArray(value)) {
+                node.setAttribute(attrName, value.join(' '));
+            } else if (typeof value === 'object' && value !== null) {
                 let res = '';
                 for (const [key, val] of Object.entries(value)) {
                     res += `${key}: ${val}; `;
                 }
                 node.setAttribute(attrName, res);
-            } else if (isArray(value)) {
-                node.setAttribute(attrName, value.join(' '));
             }
         }
         if (!isObserved) {
@@ -115,15 +115,15 @@ function syncBindOption(node, observable, property, isObserved = false) {
         if ((typeof value === 'string') || (typeof value === 'number')) {
             node.setAttribute(attrName, value);
         } else if (typeof value === 'boolean') {
-            value ? node.setAttribute(attrName, '') : 'false';
-        } else if (typeof value === 'object') {
+            value ? node.setAttribute(attrName, '') : node.removeAttribute(attrName);
+        } else if (isArray(value)) {
+            node.setAttribute(attrName, value.join(' '));
+        } else if (typeof value === 'object' && value !== null) {
             let res = '';
             for (const [key, val] of Object.entries(value)) {
                 res += `${key}: ${val}; `;
             }
             node.setAttribute(attrName, res);
-        } else if (isArray(value)) {
-            node.setAttribute(attrName, value.join(' '));
         }
 
         if (!isObserved) {
@@ -156,15 +156,15 @@ function syncBindOption(node, observable, property, isObserved = false) {
             if ((typeof value === 'string') || (typeof value === 'number')) {
                 node.setAttribute(attrName, value);
             } else if (typeof value === 'boolean') {
-                value ? node.setAttribute(attrName, '') : 'false';
-            } else if (typeof value === 'object') {
+                value ? node.setAttribute(attrName, '') : node.removeAttribute(attrName);
+            } else if (isArray(value)) {
+                node.setAttribute(attrName, value.join(' '));
+            } else if (typeof value === 'object' && value !== null) {
                 let res = '';
                 for (const [key, val] of Object.entries(value)) {
                     res += `${key}: ${val}; `;
                 }
                 node.setAttribute(attrName, res);
-            } else if (isArray(value)) {
-                node.setAttribute(attrName, value.join(' '));
             }
         }
         if (!isObserved) {

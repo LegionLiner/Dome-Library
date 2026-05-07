@@ -73,6 +73,11 @@ export function syncFor(node, observable, property, isObserved) {
 
             });
 
+            // пробрасываем методы и остальные свойства родительского scope,
+            // чтобы d-on и т.п. внутри d-for могли найти методы маршрута/стора
+            data.data.methods = observable.methods;
+            Object.setPrototypeOf(data.data, observable);
+
             resultedArray.push(data);
         })
     }

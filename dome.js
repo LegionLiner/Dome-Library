@@ -13,7 +13,7 @@ import { template, style } from "./component-api/template.js";
 import { defineComponent, defineComponents, Component } from "./component-api/define.js";
 import { defineProps, defineEmits, onEmit, emit } from "./component-api/macroses.js";
 import { defineStore, useStore } from "./store-api/index.js";
-import { defineRoute, defineRouter } from "./router-api/index.js";
+import { defineRoute, defineRouter, router } from "./router-api/index.js";
 
 export let Dome;
 
@@ -144,4 +144,5 @@ export {
 
     defineRoute,
     defineRouter,
+    router,
 };
